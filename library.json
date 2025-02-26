@@ -11,7 +11,7 @@
     ],
     "repository": {
       "type": "git",
-      "url": 
+      "url": "https://github.com/PatateMagique/drv8214_multiplatform"
     },
     "frameworks": "arduino",
     "platforms": "*"
