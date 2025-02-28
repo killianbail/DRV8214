@@ -23,15 +23,15 @@
 #endif
 
 // I2C Address (depends on A0, A1 pin settings)
-#define DRV8214_I2C_ADDR_00  0x60  // A1 = 0, A0 = 0 
-#define DRV8214_I2C_ADDR_0Z  0x62  // A1 = 0, A0 = High-Z
-#define DRV8214_I2C_ADDR_01  0x64  // A1 = 0, A0 = 1
-#define DRV8214_I2C_ADDR_Z0  0x66  // A1 = High-Z, A0 = 0
-#define DRV8214_I2C_ADDR_ZZ  0x68  // A1 = High-Z, A0 = High-Z
-#define DRV8214_I2C_ADDR_Z1  0x6A  // A1 = High-Z, A0 = 1
-#define DRV8214_I2C_ADDR_10  0x6C  // A1 = 1, A0 = 0
-#define DRV8214_I2C_ADDR_1Z  0x6E  // A1 = 1, A0 = High-Z
-#define DRV8214_I2C_ADDR_11  0x70  // A1 = 1, A0 = 1
+#define DRV8214_I2C_ADDR_00  0x30  // = 0x60/0x61 in 8-bit  -   A1 = 0, A0 = 0 
+#define DRV8214_I2C_ADDR_0Z  0x31  // = 0x62/0x63 in 8-bit  -   A1 = 0, A0 = High-Z
+#define DRV8214_I2C_ADDR_01  0x32  // = 0x64/0x65 in 8-bit  -   A1 = 0, A0 = 1
+#define DRV8214_I2C_ADDR_Z0  0x33  // = 0x66/0x67 in 8-bit  -   A1 = High-Z, A0 = 0
+#define DRV8214_I2C_ADDR_ZZ  0x34  // = 0x68/0x69 in 8-bit  -   A1 = High-Z, A0 = High-Z
+#define DRV8214_I2C_ADDR_Z1  0x35  // = 0x6A/0x6B in 8-bit  -   A1 = High-Z, A0 = 1
+#define DRV8214_I2C_ADDR_10  0x36  // = 0x6C/0x6D in 8-bit  -   A1 = 1, A0 = 0
+#define DRV8214_I2C_ADDR_1Z  0x37  // = 0x6E/0x6F in 8-bit  -   A1 = 1, A0 = High-Z
+#define DRV8214_I2C_ADDR_11  0x38  // = 0x70/0x71 in 8-bit  -   A1 = 1, A0 = 1
 
 // --- STATUS REGISTERS (Read-Only) ---
 #define DRV8214_FAULT        0x00  // Fault Status Register 
@@ -154,7 +154,7 @@ enum RegulationMode { CURRENT_FIXED, CURRENT_CYCLES, SPEED, VOLTAGE };
 struct DRV8214_Config {
     bool I2CControlled = true;  // I2C Control of the driver (0: disabled, 1: enabled)
     ControlMode control_mode = PWM;  // Control mode of the driver (PWM, PH_EN)
-    RegulationMode regulation_mode = SPEED;  // Control mode of the driver (CURRENT_FIXED, CURRENT_CYCLES, SPEED, VOLTAGE)
+    RegulationMode regulation_mode = CURRENT_FIXED;  // Control mode of the driver (CURRENT_FIXED, CURRENT_CYCLES, SPEED, VOLTAGE)
     bool voltage_range = true;  // Expected applied supply voltage range to the attached motor (0: 0V-15.7V, 1: 0V-3.92V)
     float Vref = 0.5f;  // Voltage reference for current regulation. Can be internal (fixed @500mV) or external.
     bool stall_enabled = true;  // Stall detection (0: disabled, 1: enabled)
@@ -162,9 +162,14 @@ struct DRV8214_Config {
     bool stall_behavior = false;  // Stall behavior of the driver (0: outputs disable, 1: outputs continue to drive current)
     bool bridge_behavior_thr_reached = false;  // Bridge behavior when ripple threshold is reached (0: H-bridge stays enabled, 1: H-bridge is disabled)
     uint8_t current_reg_mode = 0;  // Stall mode of the driver (0: no current regulation, 1: current regulation during inrush, 2: current regulation at all times, 3: current regulation at all times)
-    uint8_t Aipropri = 0;  // Value of the current mirror gain in μA/A
+    float Aipropri = 0;  // Value of the current mirror gain in μA/A
     float Itrip = 0.0f;  // Value of the trip current in A (current target for regulation mode CURRENT_FIXED & CURRENT_CYCLES)
-    bool verbose = false;  // Print information about the driver configuration
+    float MaxCurrent = 0.0f;  // Maximum current in A deliverable to the motor. Is fixed by the CS_GAIN_SEL bits.
+    uint8_t w_scale = 0;  // Scaling factor for target ripple speed
+    bool verbose = false;  // Enable verbose mode for debugging
+    uint16_t inrush_duration = 500;  // Inrush duration in ms
+    uint8_t inv_r = 0;  // Inverse resistance of the motor in 1/Ohms
+    uint8_t inv_r_scale = 0;  // Inverse resistance scale factor
 };
 
 class DRV8214 {
@@ -173,15 +178,16 @@ class DRV8214 {
         // Hardware and driver-specific settings
         uint8_t address;     // I2C address of the driver (depends on A0, A1 pin settings, 9 possible addresses)
         uint8_t driver_ID;   // ID of the driver if multiple drivers are used
-        uint8_t Ripropri;    // Value in Ohms of the resistor connected to IPROPI pin
-        uint8_t ripples_per_revolution;  // Number of ripples per revolution
+        uint16_t Ripropri;    // Value in Ohms of the resistor connected to IPROPI pin
+        uint16_t ripples_per_revolution;  // Number of ripples per revolution
+        uint8_t motor_internal_resistance;  // Internal resistance of the motor in Ohms
 
         // Configuration settings, all in a single struct
         DRV8214_Config config;
 
     public:
         // Constructor
-        DRV8214(uint8_t addr, uint8_t id, uint8_t sense_resistor, uint8_t ripples) : address(addr), driver_ID(id), Ripropri(sense_resistor), ripples_per_revolution(ripples) {}
+        DRV8214(uint8_t addr, uint8_t id, uint16_t sense_resistor, uint8_t ripples, uint8_t rm) : address(addr), driver_ID(id), Ripropri(sense_resistor), ripples_per_revolution(ripples), motor_internal_resistance(rm) {}
     
         // Initialization
         void init(const DRV8214_Config& config);
@@ -192,11 +198,26 @@ class DRV8214 {
         uint8_t getSenseResistor();
         uint8_t getRipplesPerRevolution();
         uint8_t getFaultStatus();
-        uint8_t getMotorSpeed();
+        uint16_t getMotorSpeedRPM();
+        uint16_t getMotorSpeedRAD();
+        uint8_t getMotorSpeedRegister();
         uint16_t getRippleCount();
-        uint8_t getMotorCurrent();
-        uint8_t getMotorVoltage();
+        float getMotorVoltage();
+        uint8_t getMotorVoltageRegister();
+        float getMotorCurrent();
+        uint8_t getMotorCurrentRegister();
         uint8_t getDutyCycle();
+        uint8_t getCONFIG0();
+        uint16_t getInrushDuration();
+        uint8_t getCONFIG3();
+        uint8_t getCONFIG4();
+        uint8_t getREG_CTRL0();
+        uint8_t getREG_CTRL1();
+        uint8_t getREG_CTRL2();
+        uint8_t getRC_CTRL0();
+        uint8_t getRC_CTRL1();
+        uint8_t getRC_CTRL2();
+        uint8_t getRC_CTRL3();
 
         // --- Control Functions ---
         void enableHbridge();
@@ -209,7 +230,7 @@ class DRV8214 {
         void enableDutyCycleControl();
         void disableDutyCycleControl();
 
-        void setInrushDuration(uint16_t threshold);
+        void setInrushDuration(uint16_t inrush_dur);
         void setCurrentRegMode(uint8_t mode);
         void setStallBehavior(bool behavior);
         void setInternalVoltageReference(float reference_voltage);
@@ -226,7 +247,7 @@ class DRV8214 {
 
         void setBridgeBehaviorThresholdReached(bool stops);
         void configureControl0(uint8_t control0);
-        void setRippleSpeed(uint8_t speed);
+        void setRippleSpeed(uint16_t speed);
         void setVoltageSpeed(float voltage);
         void setRegulationAndStallCurrent(float requested_current);
         void configureControl2(uint8_t control2);
@@ -235,6 +256,8 @@ class DRV8214 {
         void setRippleCountThreshold(uint16_t threshold);
         void configureRippleCount2(uint8_t ripple2);
         void setMotorInverseResistance(uint8_t resistance);
+        void setMotorInverseResistanceScale(uint8_t scale);
+        void setResistanceRelatedParameters();
         void setKMCScalingFactor(uint8_t factor);
         void setFilterDamping(uint8_t damping);
         void configureRippleCount6(uint8_t ripple6);
@@ -244,9 +267,9 @@ class DRV8214 {
         // --- Motor Control Functions ---
         void setControlMode(ControlMode mode, bool I2CControl);
         void setRegulationMode(RegulationMode regulation);
-        void turnForward(uint8_t speed = 0, float voltage = 0, float requested_current = 0);
-        void turnReverse(uint8_t speed = 0, float voltage = 0, float requested_current = 0);
-        void brakeMotor();
+        void turnForward(uint16_t speed = 0, float voltage = 0, float requested_current = 0);
+        void turnReverse(uint16_t speed = 0, float voltage = 0, float requested_current = 0);
+        void brakeMotor(bool initial_config = false);
         void coastMotor();
         void turnXRipples(uint8_t ripples_target, bool stops = true, bool direction = true, uint8_t speed = 0, float voltage = 0, float current = 0);
         void turnXRevolutions(uint8_t revolutions_target, bool stops = true, bool direction = true, uint8_t speed = 0, float voltage = 0, float current = 0);
@@ -254,6 +277,7 @@ class DRV8214 {
         // --- Other Functions ---
         void printMotorConfig(bool initial_config = false);
         void drvPrint(const char* message);
+        void printFaultStatus();
 };
 
 #endif // DRV8214_H

@@ -7,7 +7,7 @@ void writeRegister(uint8_t address, uint8_t reg, uint8_t value) {
     Wire.write(reg);
     Wire.write(value);
     Wire.endTransmission();
-#elif defined(DRV8214_PLATFORM_STM32)
+#elif defined(DRV8214_PLATFORM_STM32) 
     uint8_t data[2] = { reg, value };
     HAL_I2C_Master_Transmit(&hi2c1, address << 1, data, 2, HAL_MAX_DELAY);
 #endif
