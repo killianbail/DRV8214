@@ -154,22 +154,25 @@ enum RegulationMode { CURRENT_FIXED, CURRENT_CYCLES, SPEED, VOLTAGE };
 struct DRV8214_Config {
     bool I2CControlled = true;  // I2C Control of the driver (0: disabled, 1: enabled)
     ControlMode control_mode = PWM;  // Control mode of the driver (PWM, PH_EN)
-    RegulationMode regulation_mode = CURRENT_FIXED;  // Control mode of the driver (CURRENT_FIXED, CURRENT_CYCLES, SPEED, VOLTAGE)
+    RegulationMode regulation_mode = SPEED;  // Control mode of the driver (CURRENT_FIXED, CURRENT_CYCLES, SPEED, VOLTAGE)
     bool voltage_range = true;  // Expected applied supply voltage range to the attached motor (0: 0V-15.7V, 1: 0V-3.92V)
     float Vref = 0.5f;  // Voltage reference for current regulation. Can be internal (fixed @500mV) or external.
     bool stall_enabled = true;  // Stall detection (0: disabled, 1: enabled)
     bool ovp_enabled = true;  // Overvoltage protection (0: disabled, 1: enabled)
     bool stall_behavior = false;  // Stall behavior of the driver (0: outputs disable, 1: outputs continue to drive current)
     bool bridge_behavior_thr_reached = false;  // Bridge behavior when ripple threshold is reached (0: H-bridge stays enabled, 1: H-bridge is disabled)
-    uint8_t current_reg_mode = 0;  // Stall mode of the driver (0: no current regulation, 1: current regulation during inrush, 2: current regulation at all times, 3: current regulation at all times)
+    uint8_t current_reg_mode = 3;  // Stall mode of the driver (0: no current regulation, 1: current regulation during inrush, 2: current regulation at all times, 3: current regulation at all times)
     float Aipropri = 0;  // Value of the current mirror gain in μA/A
     float Itrip = 0.0f;  // Value of the trip current in A (current target for regulation mode CURRENT_FIXED & CURRENT_CYCLES)
     float MaxCurrent = 0.0f;  // Maximum current in A deliverable to the motor. Is fixed by the CS_GAIN_SEL bits.
-    uint8_t w_scale = 0;  // Scaling factor for target ripple speed
+    uint8_t w_scale = 128;  // Scaling factor for target ripple speed
     bool verbose = false;  // Enable verbose mode for debugging
-    uint16_t inrush_duration = 500;  // Inrush duration in ms
+    uint16_t inrush_duration = 200;  // Inrush duration in ms
     uint8_t inv_r = 0;  // Inverse resistance of the motor in 1/Ohms
-    uint8_t inv_r_scale = 0;  // Inverse resistance scale factor
+    uint16_t inv_r_scale = 0;  // Inverse resistance scale factor
+    uint8_t kmc = 30;  // KMC 
+    uint8_t kmc_scale = 0b11;  // KMC scale factor
+    bool soft_start_stop_enabled = false;  // Soft start/stop enable
 };
 
 class DRV8214 {
@@ -181,13 +184,15 @@ class DRV8214 {
         uint16_t Ripropri;    // Value in Ohms of the resistor connected to IPROPI pin
         uint16_t ripples_per_revolution;  // Number of ripples per revolution
         uint8_t motor_internal_resistance;  // Internal resistance of the motor in Ohms
+        uint8_t motor_reduction_ratio;  // Reduction ratio of the motor
+        uint16_t motor_max_rpm;  // Maximum RPM of the motor
 
         // Configuration settings, all in a single struct
         DRV8214_Config config;
 
     public:
         // Constructor
-        DRV8214(uint8_t addr, uint8_t id, uint16_t sense_resistor, uint8_t ripples, uint8_t rm) : address(addr), driver_ID(id), Ripropri(sense_resistor), ripples_per_revolution(ripples), motor_internal_resistance(rm) {}
+        DRV8214(uint8_t addr, uint8_t id, uint16_t sense_resistor, uint8_t ripples, uint8_t rm, uint8_t reduction_ratio, uint16_t rpm) : address(addr), driver_ID(id), Ripropri(sense_resistor), ripples_per_revolution(ripples), motor_internal_resistance(rm), motor_reduction_ratio(reduction_ratio), motor_max_rpm(rpm) {}
     
         // Initialization
         void init(const DRV8214_Config& config);
@@ -198,8 +203,10 @@ class DRV8214 {
         uint8_t getSenseResistor();
         uint8_t getRipplesPerRevolution();
         uint8_t getFaultStatus();
-        uint16_t getMotorSpeedRPM();
+        uint32_t getMotorSpeedRPM();
         uint16_t getMotorSpeedRAD();
+        uint16_t getMotorSpeedShaftRPM();
+        uint16_t getMotorSpeedShaftRAD();
         uint8_t getMotorSpeedRegister();
         uint16_t getRippleCount();
         float getMotorVoltage();
@@ -215,9 +222,14 @@ class DRV8214 {
         uint8_t getREG_CTRL1();
         uint8_t getREG_CTRL2();
         uint8_t getRC_CTRL0();
-        uint8_t getRC_CTRL1();
         uint8_t getRC_CTRL2();
-        uint8_t getRC_CTRL3();
+        uint16_t getRippleThreshold();
+        uint8_t getKMC();
+        uint8_t getKMCScale();
+        uint8_t getFilterDamping();
+        uint8_t getRC_CTRL6();
+        uint8_t getRC_CTRL7();
+        uint8_t getRC_CTRL8();
 
         // --- Control Functions ---
         void enableHbridge();
@@ -246,19 +258,22 @@ class DRV8214 {
         void disableCountThresholdInterrupt();
 
         void setBridgeBehaviorThresholdReached(bool stops);
+        void setSoftStartStop(bool enable);
         void configureControl0(uint8_t control0);
         void setRippleSpeed(uint16_t speed);
         void setVoltageSpeed(float voltage);
         void setRegulationAndStallCurrent(float requested_current);
         void configureControl2(uint8_t control2);
-        void enableRippleCount();
+        void enableRippleCount(bool enable = true);
+        void enableErrorCorrection(bool enable = true);
         void configureRippleCount0(uint8_t ripple0);
         void setRippleCountThreshold(uint16_t threshold);
         void configureRippleCount2(uint8_t ripple2);
+        void setKMCScale(uint8_t scale);
         void setMotorInverseResistance(uint8_t resistance);
         void setMotorInverseResistanceScale(uint8_t scale);
         void setResistanceRelatedParameters();
-        void setKMCScalingFactor(uint8_t factor);
+        void setKMC(uint8_t factor);
         void setFilterDamping(uint8_t damping);
         void configureRippleCount6(uint8_t ripple6);
         void configureRippleCount7(uint8_t ripple7);

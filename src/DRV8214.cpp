@@ -23,12 +23,19 @@ void DRV8214::init(const DRV8214_Config& cfg) {
     setCurrentRegMode(config.current_reg_mode); // Default to no current regulation
     setStallDetection(config.stall_enabled); // Default to stall detection enabled
     setStallBehavior(config.stall_behavior); // Default to outputs disabled on stall
-    setBridgeBehaviorThresholdReached(config.bridge_behavior_thr_reached); // Default to H-bridge is disabled when RC_CNT exceeds threshold
+    setBridgeBehaviorThresholdReached(config.bridge_behavior_thr_reached); // Default to H-bridge stays enabled when RC_CNT exceeds threshold
     setInternalVoltageReference(0); // Default to internal voltage reference of 500mV
+    setSoftStartStop(config.soft_start_stop_enabled); // Default to soft start/stop disbaled
     setInrushDuration(config.inrush_duration); // Default to 200 ms
     setResistanceRelatedParameters();
-    setMotorInverseResistance(51); // Default to 0 Ohms
-    setMotorInverseResistanceScale(1024); // Default to 0
+    enableRippleCount(); // Default to enable ripple counting
+    setKMC(config.kmc); // Default to KMC = 30
+    setKMCScale(config.kmc_scale); // Default to KMC scale factor = 24 x 2^13
+
+    // Configure the regulation modes
+    setRippleSpeed(motor_max_rpm); // Default to 0 rad/s
+    setRegulationAndStallCurrent(0.2); // Default to 0.2 A
+    setVoltageSpeed(3.3); // Default to 3.3 V
 
     brakeMotor(true); // Default to brake motor
 
@@ -57,14 +64,24 @@ uint8_t DRV8214::getFaultStatus() {
     return readRegister(address, DRV8214_FAULT);
 }
 
-uint16_t DRV8214::getMotorSpeedRPM() {
+uint32_t DRV8214::getMotorSpeedRPM() {
     // 00h corresponds to 0 rad/s and FFh corresponds to the maximum speed allowable by W_SCALE
-    return (readRegister(address, DRV8214_RC_STATUS1) * config.w_scale * 60) / (2 * PI);
+    return ((readRegister(address, DRV8214_RC_STATUS1) * config.w_scale * 60) / (2 * PI * ripples_per_revolution));
 }
 
 uint16_t DRV8214::getMotorSpeedRAD() {
     // 00h corresponds to 0 rad/s and FFh corresponds to the maximum speed allowable by W_SCALE
-    return (readRegister(address, DRV8214_RC_STATUS1) * config.w_scale);
+    return ((readRegister(address, DRV8214_RC_STATUS1) * config.w_scale) / ripples_per_revolution);
+}
+
+uint16_t DRV8214::getMotorSpeedShaftRPM() {
+    // 00h corresponds to 0 rad/s and FFh corresponds to the maximum speed allowable by W_SCALE
+    return (getMotorSpeedRPM() / motor_reduction_ratio);
+}
+
+uint16_t DRV8214::getMotorSpeedShaftRAD() {
+    // 00h corresponds to 0 rad/s and FFh corresponds to the maximum speed allowable by W_SCALE
+    return (getMotorSpeedRAD() / motor_reduction_ratio);
 }
 
 uint8_t DRV8214::getMotorSpeedRegister() {
@@ -76,10 +93,23 @@ uint16_t DRV8214::getRippleCount() {
 }
 
 float DRV8214::getMotorVoltage() {
-    // 00h corresponds to 0 V and B0h corresponds to 11 V.
-    float voltage = (readRegister(address, DRV8214_REG_STATUS1) / 176.0f) * 11.0f;
-    return voltage;
-    return readRegister(address, DRV8214_REG_STATUS1);
+    if (config.voltage_range) {
+        float voltage = (readRegister(address, DRV8214_REG_STATUS1) / 255.0f) * 3.92f;
+        return voltage;
+    } else {
+        if (config.ovp_enabled) {
+            // If OVP is enabled, the maximum voltage is 11 V
+            if (readRegister(address, DRV8214_REG_STATUS1) > 0xB0) {
+                return 11.0f;
+            } else {     // 00h corresponds to 0 V and B0h corresponds to 11 V.
+                float voltage = (readRegister(address, DRV8214_REG_STATUS1) / 176.0f) * 11.0f;
+                return voltage;
+            }
+        } else {
+            float voltage = (readRegister(address, DRV8214_REG_STATUS1) / 255.0f) * 15.7f;
+            return voltage;
+        }
+    }
 }
 
 uint8_t DRV8214::getMotorVoltageRegister() {
@@ -97,7 +127,8 @@ uint8_t DRV8214::getMotorCurrentRegister() {
 }
 
 uint8_t DRV8214::getDutyCycle() {
-    return (readRegister(address, DRV8214_REG_STATUS3) & REG_STATUS3_IN_DUTY);
+    uint8_t dutyCycle = readRegister(address, DRV8214_REG_STATUS3) & REG_STATUS3_IN_DUTY;
+    return (dutyCycle * 100) / 63; // Convert 6-bit value to percentage
 }
 
 uint8_t DRV8214::getCONFIG0() {
@@ -126,6 +157,43 @@ uint8_t DRV8214::getREG_CTRL1() {
 
 uint8_t DRV8214::getREG_CTRL2() {
     return readRegister(address, DRV8214_REG_CTRL2);
+}
+
+uint8_t DRV8214::getRC_CTRL0() {
+    return readRegister(address, DRV8214_RC_CTRL0);
+}
+
+uint8_t DRV8214::getRC_CTRL2() {
+    return readRegister(address, DRV8214_RC_CTRL2);
+}
+
+uint16_t DRV8214::getRippleThreshold() {
+    return (readRegister(address, DRV8214_RC_CTRL2) << 8) | readRegister(address, DRV8214_RC_CTRL1);
+}
+
+uint8_t DRV8214::getKMC() {
+    return readRegister(address, DRV8214_RC_CTRL4);
+}
+
+uint8_t DRV8214::getKMCScale() {
+    // keep only bit 4 and 5
+    return (readRegister(address, DRV8214_RC_CTRL2) >> 4) & 0x03;
+}
+
+uint8_t DRV8214::getFilterDamping() {
+    return (readRegister(address, DRV8214_RC_CTRL5) >> 4) & 0x0F;
+}
+
+uint8_t DRV8214::getRC_CTRL6() {
+    return readRegister(address, DRV8214_RC_CTRL6);
+}
+
+uint8_t DRV8214::getRC_CTRL7() {
+    return readRegister(address, DRV8214_RC_CTRL7);
+}
+
+uint8_t DRV8214::getRC_CTRL8() {
+    return readRegister(address, DRV8214_RC_CTRL8);
 }
 
 // --- Control Functions ---
@@ -169,6 +237,7 @@ void DRV8214::disableDutyCycleControl() {
 }
 
 void DRV8214::setInrushDuration(uint16_t threshold) {
+    
     writeRegister(address, DRV8214_CONFIG1, (threshold >> 8) & 0xFF);
     writeRegister(address, DRV8214_CONFIG2, threshold & 0xFF);
 }
@@ -256,8 +325,8 @@ void DRV8214::setBridgeBehaviorThresholdReached(bool stops) {
     modifyRegister(address, DRV8214_RC_CTRL0, RC_CTRL0_RC_HIZ, stops);
 }
 
-void DRV8214::enableRippleCount() {
-    modifyRegister(address, DRV8214_RC_CTRL0, RC_CTRL0_EN_RC, true);
+void DRV8214::setSoftStartStop(bool enable) {
+    modifyRegister(address, DRV8214_REG_CTRL0, REG_CTRL0_EN_SS, enable);
 }
 
 void DRV8214::configureControl0(uint8_t control0) {
@@ -329,11 +398,16 @@ void DRV8214::setRegulationAndStallCurrent(float requested_current) {
 
 void DRV8214::setRippleSpeed(uint16_t speed) {
 
+    if (speed > motor_max_rpm) { speed = motor_max_rpm; } // Cap speed to the maximum RPM of the motor
+
+    // Find the corresponding ripples frequency (Hz) value
+    uint32_t ripple_speed = (speed * motor_reduction_ratio * ripples_per_revolution * 2 * PI) / 60;
+
     // Define max feasible ripple speed based on 8-bit WSET_VSET and max scaling factor (128)
     const uint16_t MAX_SPEED = 32640; // 255 * 128 = 32640 rad/s
     
     // Cap threshold to the maximum feasible value
-    if (speed > MAX_SPEED) { speed = MAX_SPEED; }
+    if (ripple_speed > MAX_SPEED) { ripple_speed = MAX_SPEED; }
 
     // Define scaling factors and corresponding bit values
     struct ScaleOption {
@@ -349,19 +423,19 @@ void DRV8214::setRippleSpeed(uint16_t speed) {
     };
 
     // Find the optimal scaling factor and 10-bit value
-    uint16_t WSET_VSET = speed;
+    uint16_t WSET_VSET = ripple_speed;
     uint8_t W_SCALE = 0b00;
 
     for (const auto &option : scaleOptions) {
-        if (speed >= option.scale) {
-            WSET_VSET = speed / option.scale;
-            if (WSET_VSET < 255) { // Ensure WSET_VSET fits within 8 bits
+        if (ripple_speed >= option.scale) {
+            WSET_VSET = ripple_speed / option.scale;
+            if (WSET_VSET <= 255) { // Ensure WSET_VSET fits within 8 bits
                 W_SCALE = option.bits;
                 break;
             }
         }
     }
-    config.w_scale = W_SCALE;
+    config.w_scale = scaleOptions[W_SCALE].scale;
 
     WSET_VSET = WSET_VSET & 0xFF; // Ensure WSET_VSET fits within 8 bits
 
@@ -369,13 +443,16 @@ void DRV8214::setRippleSpeed(uint16_t speed) {
         Serial.print("WSET_VSET: ");
         Serial.print(WSET_VSET, DEC); 
         Serial.print(" | W_SCALE: ");
-        Serial.print(W_SCALE, DEC);
+        Serial.print(config.w_scale, DEC);
+        Serial.print(" or 0b");
+        Serial.print(W_SCALE, BIN);
         Serial.print(" | Effective Target Speed: ");
         Serial.println(WSET_VSET * scaleOptions[W_SCALE].scale, DEC);
+        Serial.println(" rad/s"); 
     }
     
     writeRegister(address, DRV8214_REG_CTRL1, WSET_VSET);
-    modifyRegister(address, DRV8214_REG_CTRL0, REG_CTRL0_W_SCALE, W_SCALE);
+    modifyRegisterBits(address, DRV8214_REG_CTRL0, REG_CTRL0_W_SCALE, W_SCALE);
 }
 
 void DRV8214::setVoltageSpeed(float voltage)
@@ -402,6 +479,14 @@ void DRV8214::setVoltageSpeed(float voltage)
 
 void DRV8214::configureControl2(uint8_t control2) {
     writeRegister(address, DRV8214_REG_CTRL2, control2);
+}
+
+void DRV8214::enableRippleCount(bool enable) {
+    modifyRegister(address, DRV8214_RC_CTRL0, RC_CTRL0_EN_RC, enable);
+}
+
+void DRV8214::enableErrorCorrection(bool enable) {
+    modifyRegister(address, DRV8214_RC_CTRL0, RC_CTRL0_DIS_EC, enable);
 }
 
 void DRV8214::configureRippleCount0(uint8_t ripple0) {
@@ -464,11 +549,19 @@ void DRV8214::configureRippleCount2(uint8_t ripple2) {
     writeRegister(address, DRV8214_RC_CTRL2, ripple2);
 }
 
+void DRV8214::setKMCScale(uint8_t scale) {
+    //make sure the 2 bits of scale are placed on bit 4 and 5
+    scale = scale << 4;
+    modifyRegisterBits(address, DRV8214_RC_CTRL2, RC_CTRL2_KMC_SCALE, scale);
+}
+
 void DRV8214::setMotorInverseResistance(uint8_t resistance) {
     writeRegister(address, DRV8214_RC_CTRL3, resistance);
 }
 
 void DRV8214::setMotorInverseResistanceScale(uint8_t scale) {
+    //make sure the 2 bits of scale are placed on bit 6 and 7
+    scale = scale << 6;
     modifyRegisterBits(address, DRV8214_RC_CTRL2, RC_CTRL2_INV_R_SCALE, scale);
 }
 
@@ -502,14 +595,14 @@ void DRV8214::setResistanceRelatedParameters()
         }
     }
     config.inv_r = bestInvR;
-    config.inv_r_scale = bestScaleBits;
+    config.inv_r_scale = scaleValues[bestScaleBits];
 
     // Set the selected INV_R and INV_R_SCALE
     setMotorInverseResistanceScale(bestScaleBits);
     setMotorInverseResistance(bestInvR);
 }
 
-void DRV8214::setKMCScalingFactor(uint8_t factor) {
+void DRV8214::setKMC(uint8_t factor) {
     writeRegister(address, DRV8214_RC_CTRL4, factor);
 }
 
@@ -674,7 +767,7 @@ void DRV8214::turnXRipples(uint8_t ripples_target, bool stops, bool direction, u
 
 void DRV8214::turnXRevolutions(uint8_t revolutions_target, bool stops, bool direction, uint8_t speed, float voltage, float requested_current) {
 
-    uint8_t ripples_target = revolutions_target * ripples_per_revolution;
+    uint8_t ripples_target = revolutions_target * ripples_per_revolution * motor_reduction_ratio;
     turnXRipples(ripples_target, stops, direction, speed, voltage, requested_current);
 }
 
@@ -694,7 +787,7 @@ void DRV8214::printMotorConfig(bool initial_config) {
         address, Ripropri, ripples_per_revolution);
     drvPrint(buffer);
     
-    snprintf(buffer, sizeof(buffer), "Configuration: OVP: %s | STALL detection: %s | I2C controlled: %s | Mode: %s",
+    snprintf(buffer, sizeof(buffer), "Configuration: OVP: %s | STALL detect: %s | I2C controlled: %s | Mode: %s",
         config.voltage_range ? "Enabled" : "Disabled",
         config.stall_enabled ? "Enabled" : "Disabled",
         config.I2CControlled ? "Yes" : "No",
@@ -702,21 +795,36 @@ void DRV8214::printMotorConfig(bool initial_config) {
     drvPrint(buffer);
     
     // Regulation mode details
-    drvPrint(" | Regulation: \n");
+    drvPrint(" | Regulation: ");
     switch (config.regulation_mode) {
-        case CURRENT_FIXED:   drvPrint("CURRENT_FIXED"); break;
-        case CURRENT_CYCLES:  drvPrint("CURRENT_CYCLES"); break;
-        case SPEED:           drvPrint("SPEED"); break;
-        case VOLTAGE:         drvPrint("VOLTAGE"); break;
+        case CURRENT_FIXED:   drvPrint("CURRENT_FIXED\n"); break;
+        case CURRENT_CYCLES:  drvPrint("CURRENT_CYCLES\n"); break;
+        case SPEED:           drvPrint("SPEED\n"); break;
+        case VOLTAGE:         drvPrint("VOLTAGE\n"); break;
     }
     
     snprintf(buffer, sizeof(buffer),
-        "Vref: %.3f | Current Reg. Mode: %d | Stall Behavior: %s | Bridge Behavior: %s | VRange: %s \n",
+        "Vref: %.3f | Current Reg. Mode: %d | VRange: %s \n",
             config.Vref, config.current_reg_mode,
-            config.stall_behavior ? "Drive current" : "Disable outputs",
-            config.bridge_behavior_thr_reached ? "H-bridge disabled" : "H-bridge stays enabled");
-            config.voltage_range ? "0V-3.92V" : "0V-15.7V";
+            config.voltage_range ? "0V-3.92V" : "0V-15.7V");
     drvPrint(buffer);
+
+    snprintf(buffer, sizeof(buffer),
+        "Stall Behavior: %s | Bridge Behavior: %s\n",
+        config.stall_behavior ? "Drive current" : "Disable outputs",
+        config.bridge_behavior_thr_reached ? "H-bridge disabled" : "H-bridge stays enabled");
+    drvPrint(buffer);
+
+    snprintf(buffer, sizeof(buffer),
+        "Inrush Duration: %d ms | INV_R: %d | INV_R_SCALE: %d\n",
+        config.inrush_duration, config.inv_r, config.inv_r_scale);
+    drvPrint(buffer);
+
+    snprintf(buffer, sizeof(buffer),
+        "KMC: %d | KMCScale: %d\n",
+        config.kmc, config.kmc_scale);
+    drvPrint(buffer);
+
 }
 
 void DRV8214::drvPrint(const char* msg) {
