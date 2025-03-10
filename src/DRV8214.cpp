@@ -15,7 +15,6 @@ void DRV8214::init(const DRV8214_Config& cfg) {
     config = cfg;
 
     disableHbridge();
-    delay(50); // Wait for the H-bridge to disable
     setControlMode(config.control_mode, config.I2CControlled); // Default to PWM control with I2C enabled
     setRegulationMode(config.regulation_mode); // Default to SPEED regulation
     setVoltageRange(config.voltage_range);  // Default to 0 V - 3.92 V range
@@ -23,12 +22,14 @@ void DRV8214::init(const DRV8214_Config& cfg) {
     setCurrentRegMode(config.current_reg_mode); // Default to no current regulation
     setStallDetection(config.stall_enabled); // Default to stall detection enabled
     setStallBehavior(config.stall_behavior); // Default to outputs disabled on stall
+    enableStallInterrupt(); // Default to enable stall interrupt
     setBridgeBehaviorThresholdReached(config.bridge_behavior_thr_reached); // Default to H-bridge stays enabled when RC_CNT exceeds threshold
     setInternalVoltageReference(0); // Default to internal voltage reference of 500mV
     setSoftStartStop(config.soft_start_stop_enabled); // Default to soft start/stop disbaled
     setInrushDuration(config.inrush_duration); // Default to 200 ms
     setResistanceRelatedParameters();
     enableRippleCount(); // Default to enable ripple counting
+    resetRippleCounter(); // Default to reset ripple counter
     setKMC(config.kmc); // Default to KMC = 30
     setKMCScale(config.kmc_scale); // Default to KMC scale factor = 24 x 2^13
 
@@ -163,12 +164,38 @@ uint8_t DRV8214::getRC_CTRL0() {
     return readRegister(address, DRV8214_RC_CTRL0);
 }
 
+uint8_t DRV8214::getRC_CTRL1() {
+    return readRegister(address, DRV8214_RC_CTRL1);
+}
+
 uint8_t DRV8214::getRC_CTRL2() {
     return readRegister(address, DRV8214_RC_CTRL2);
 }
 
-uint16_t DRV8214::getRippleThreshold() {
-    return (readRegister(address, DRV8214_RC_CTRL2) << 8) | readRegister(address, DRV8214_RC_CTRL1);
+uint16_t DRV8214::getRippleThreshold()
+{
+    uint8_t ctrl2 = readRegister(address, DRV8214_RC_CTRL2);
+    uint8_t ctrl1 = readRegister(address, DRV8214_RC_CTRL1);
+
+    // top two bits are bits 1..0 in ctrl2
+    uint16_t thr_high = (ctrl2 & 0x03) << 8;  // shift them to bits 9..8
+    uint16_t thr_low  = ctrl1;               // bits 7..0
+
+    return (thr_high | thr_low); 
+}
+
+uint16_t DRV8214::getRippleThresholdScaled() {
+    getRippleThresholdScale();
+    if (config.ripple_threshold_scale  == 0) { return getRippleThreshold() * 2; }
+    if (config.ripple_threshold_scale  == 1) { return getRippleThreshold() * 8; }
+    if (config.ripple_threshold_scale  == 2) { return getRippleThreshold() * 16; }
+    if (config.ripple_threshold_scale  == 3) { return getRippleThreshold() * 64; }
+    return getRippleThreshold() * config.ripple_threshold_scale;
+}
+
+uint16_t DRV8214::getRippleThresholdScale() {
+    config.ripple_threshold_scale = (readRegister(address, DRV8214_RC_CTRL2) & RC_CTRL2_RC_THR_SCALE) >> 2;
+    return config.ripple_threshold_scale;
 }
 
 uint8_t DRV8214::getKMC() {
@@ -225,7 +252,9 @@ void DRV8214::resetRippleCounter() {
 }
 
 void DRV8214::resetFaultFlags() {
+    disableHbridge();
     modifyRegister(address, DRV8214_CONFIG0, CONFIG0_CLR_FLT, true);
+    enableHbridge();
 }
 
 void DRV8214::enableDutyCycleControl() {
@@ -384,16 +413,10 @@ void DRV8214::setRegulationAndStallCurrent(float requested_current) {
     config.Itrip = config.Vref / (Ripropri * config.Aipropri);
 
     if (config.verbose) {
-        Serial.print("Requested I = ");
-        Serial.print(requested_current, 3);
-        Serial.print(" A => Chosen CS_GAIN_SEL: 0b");
-        Serial.print(cs_gain_sel, BIN);
-        Serial.print(" => Aipropri = ");
-        Serial.print(config.Aipropri, 6);  // Print with 6 decimal places to reflect μA/A scale
-        Serial.print(" A/A => Actual Itrip = ");
-        Serial.print(config.Itrip, 3);
-        Serial.println(" A");
-    } 
+        char buffer[256];  // Adjust the buffer size as needed
+        snprintf(buffer, sizeof(buffer), "Requested I = %f A => Chosen CS_GAIN_SEL: 0b%d => Aipropri = %f A/A => Actual Itrip = %f A", requested_current, cs_gain_sel, config.Aipropri, config.Itrip);
+        drvPrint(buffer);
+    }
 }
 
 void DRV8214::setRippleSpeed(uint16_t speed) {
@@ -440,17 +463,10 @@ void DRV8214::setRippleSpeed(uint16_t speed) {
     WSET_VSET = WSET_VSET & 0xFF; // Ensure WSET_VSET fits within 8 bits
 
     if (config.verbose) {
-        Serial.print("WSET_VSET: ");
-        Serial.print(WSET_VSET, DEC); 
-        Serial.print(" | W_SCALE: ");
-        Serial.print(config.w_scale, DEC);
-        Serial.print(" or 0b");
-        Serial.print(W_SCALE, BIN);
-        Serial.print(" | Effective Target Speed: ");
-        Serial.println(WSET_VSET * scaleOptions[W_SCALE].scale, DEC);
-        Serial.println(" rad/s"); 
+        char buffer[256];  // Adjust the buffer size as needed
+        snprintf(buffer, sizeof(buffer), "WSET_VSET: %d | W_SCALE: %d or 0b%d | Effective Target Speed: %d rad/s ", WSET_VSET, config.w_scale, W_SCALE, WSET_VSET * config.w_scale);
+        drvPrint(buffer);
     }
-    
     writeRegister(address, DRV8214_REG_CTRL1, WSET_VSET);
     modifyRegisterBits(address, DRV8214_REG_CTRL0, REG_CTRL0_W_SCALE, W_SCALE);
 }
@@ -528,25 +544,29 @@ void DRV8214::setRippleCountThreshold(uint16_t threshold) {
             }
         }
     }
-
-    Serial.print("RC_THR: ");
-    Serial.print(rc_thr, DEC); 
-    Serial.print(" | RC_THR_SCALE: ");
-    Serial.println(rc_thr_scale_bits, DEC);
-
+    if (config.verbose) {
+        char buffer[256];  // Adjust the buffer size as needed
+        snprintf(buffer, sizeof(buffer), "RC_THR: %d | RC_THR_SCALE: %d ", rc_thr, rc_thr_scale_bits);
+        drvPrint(buffer);
+    }
+    config.ripple_threshold = rc_thr;
+    config.ripple_threshold_scale = rc_thr_scale_bits;
     // Ensure rc_thr fits within 10 bits
     rc_thr = rc_thr & 0x3FF;
     
     // Split into lower 8 bits and upper 2 bits
-    uint8_t rc_thr_low = rc_thr & 0xFF;
-    uint8_t rc_thr_high = (rc_thr >> 8) & 0x03;
-
+    uint8_t rc_thr_low  = rc_thr & 0xFF;         // bits 7..0
+    uint8_t rc_thr_high = (rc_thr >> 8) & 0x03;  // bits 9..8
     writeRegister(address, DRV8214_RC_CTRL1, rc_thr_low);
-    writeRegister(address, DRV8214_RC_CTRL2, (rc_thr_high << 6) | (rc_thr_scale_bits << 2));
+    setRippleThresholdScale(rc_thr_scale_bits);
+    modifyRegisterBits(address, DRV8214_RC_CTRL2, RC_CTRL2_RC_THR_HIGH, rc_thr_high);
 }
 
-void DRV8214::configureRippleCount2(uint8_t ripple2) {
-    writeRegister(address, DRV8214_RC_CTRL2, ripple2);
+void DRV8214::setRippleThresholdScale(uint8_t scale) {
+    //make sure the 2 bits of scale are placed on bit 2 and 3
+    scale = scale & 0x03;
+    scale = scale << 2;
+    modifyRegisterBits(address, DRV8214_RC_CTRL2, RC_CTRL2_RC_THR_SCALE, scale);
 }
 
 void DRV8214::setKMCScale(uint8_t scale) {
@@ -565,8 +585,7 @@ void DRV8214::setMotorInverseResistanceScale(uint8_t scale) {
     modifyRegisterBits(address, DRV8214_RC_CTRL2, RC_CTRL2_INV_R_SCALE, scale);
 }
 
-void DRV8214::setResistanceRelatedParameters()
-{
+void DRV8214::setResistanceRelatedParameters() {
     // Possible values of INV_R_SCALE and corresponding register bit settings
     const uint16_t scaleValues[4] = {2, 64, 1024, 8192};
     const uint8_t scaleBits[4] = {0b00, 0b01, 0b10, 0b11};
@@ -744,28 +763,17 @@ void DRV8214::coastMotor() {
         // We could do "sleep" or "brake," or just do nothing here;
         Serial.println("PH/EN mode does not support coast (High-Z) while awake.");
     }
-    drvPrint("Cosating Motor\n");
+    drvPrint("Coasting Motor\n");
 }
 
-void DRV8214::turnXRipples(uint8_t ripples_target, bool stops, bool direction, uint8_t speed, float voltage, float requested_current) {
-
-    /**
-     * @brief Turns the motor a specific number of ripples in a given direction at a specific speed.
-     * 
-     * @param ripples_target Number of ripples to move.
-     * @param stops If true, the motor stops after reaching the ripple target.
-     * @param direction Direction of movement: true for forward, false for reverse.
-     * @param speed Speed at which the motor should turn in regulation mode, or voltage in voltage mode.
-     *
-     */
-
-    resetRippleCounter();
+void DRV8214::turnXRipples(uint16_t ripples_target, bool stops, bool direction, uint16_t speed, float voltage, float requested_current) {
     setRippleCountThreshold(ripples_target);
+    resetRippleCounter();
     if (stops != config.bridge_behavior_thr_reached) { setBridgeBehaviorThresholdReached(stops); } // Set bridge behavior if different
     if (direction) { turnForward(speed, voltage, requested_current); } else { turnReverse(speed, voltage, requested_current); }
 }
 
-void DRV8214::turnXRevolutions(uint8_t revolutions_target, bool stops, bool direction, uint8_t speed, float voltage, float requested_current) {
+void DRV8214::turnXRevolutions(uint16_t revolutions_target, bool stops, bool direction, uint16_t speed, float voltage, float requested_current) {
 
     uint8_t ripples_target = revolutions_target * ripples_per_revolution * motor_reduction_ratio;
     turnXRipples(ripples_target, stops, direction, speed, voltage, requested_current);
@@ -825,11 +833,14 @@ void DRV8214::printMotorConfig(bool initial_config) {
         config.kmc, config.kmc_scale);
     drvPrint(buffer);
 
+    _debugPort->println(getRC_CTRL2());
 }
 
 void DRV8214::drvPrint(const char* msg) {
     #ifdef DRV8214_PLATFORM_ARDUINO
-        Serial.print(msg);
+        if (_debugPort) {
+            _debugPort->print(msg);
+        }
     #elif defined(DRV8214_PLATFORM_STM32)
         // Option 1: Using HAL_UART_Transmit directly
         HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
@@ -877,7 +888,6 @@ void DRV8214::printFaultStatus() {
     }
 }
 
-
-
-
-// HAL_I2C_Mem_Write(&hi2c1, address, register, I2C_MEMADD_SIZE_8BIT, &value, 1, HAL_MAX_DELAY);
+void DRV8214::setDebugStream(Stream* debugPort) {
+    _debugPort = debugPort;
+}

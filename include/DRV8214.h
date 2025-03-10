@@ -126,7 +126,7 @@
 // RC_CTRL2 (0x13) Bit Masks - Read/Write
 #define RC_CTRL2_INV_R_SCALE  0xC0  // Bits 7-6 - Inversion Scale Factor [1:0]
 #define RC_CTRL2_KMC_SCALE    0x30  // Bits 5-4 - KMC Scaling Factor
-#define RC_CTRL2_RC_THR_SCALE 0x18  // Bits 3-2 - Ripple Count Threshold Scaling [1:0]
+#define RC_CTRL2_RC_THR_SCALE 0x0C  // Bits 3-2 - Ripple Count Threshold Scaling [1:0]
 #define RC_CTRL2_RC_THR_HIGH  0x03  // Bits 1-0 - Ripple Count Threshold [9:8]
 
 // RC_CTRL5 (0x16) Bit Masks - Read/Write
@@ -167,12 +167,14 @@ struct DRV8214_Config {
     float MaxCurrent = 0.0f;  // Maximum current in A deliverable to the motor. Is fixed by the CS_GAIN_SEL bits.
     uint8_t w_scale = 128;  // Scaling factor for target ripple speed
     bool verbose = false;  // Enable verbose mode for debugging
-    uint16_t inrush_duration = 200;  // Inrush duration in ms
+    uint16_t inrush_duration = 500;  // Inrush duration in ms
     uint8_t inv_r = 0;  // Inverse resistance of the motor in 1/Ohms
     uint16_t inv_r_scale = 0;  // Inverse resistance scale factor
     uint8_t kmc = 30;  // KMC 
     uint8_t kmc_scale = 0b11;  // KMC scale factor
     bool soft_start_stop_enabled = false;  // Soft start/stop enable
+    uint16_t ripple_threshold = 0;  // Ripple count threshold
+    uint8_t ripple_threshold_scale = 2;  // Ripple count threshold scaling factor
 };
 
 class DRV8214 {
@@ -189,6 +191,12 @@ class DRV8214 {
 
         // Configuration settings, all in a single struct
         DRV8214_Config config;
+
+        // Debug port
+        Stream* _debugPort = nullptr;
+
+        // Private functions
+        void drvPrint(const char* message);
 
     public:
         // Constructor
@@ -222,8 +230,11 @@ class DRV8214 {
         uint8_t getREG_CTRL1();
         uint8_t getREG_CTRL2();
         uint8_t getRC_CTRL0();
+        uint8_t getRC_CTRL1();
         uint8_t getRC_CTRL2();
         uint16_t getRippleThreshold();
+        uint16_t getRippleThresholdScaled();
+        uint16_t getRippleThresholdScale();
         uint8_t getKMC();
         uint8_t getKMCScale();
         uint8_t getFilterDamping();
@@ -268,7 +279,7 @@ class DRV8214 {
         void enableErrorCorrection(bool enable = true);
         void configureRippleCount0(uint8_t ripple0);
         void setRippleCountThreshold(uint16_t threshold);
-        void configureRippleCount2(uint8_t ripple2);
+        void setRippleThresholdScale(uint8_t scale);
         void setKMCScale(uint8_t scale);
         void setMotorInverseResistance(uint8_t resistance);
         void setMotorInverseResistanceScale(uint8_t scale);
@@ -286,13 +297,13 @@ class DRV8214 {
         void turnReverse(uint16_t speed = 0, float voltage = 0, float requested_current = 0);
         void brakeMotor(bool initial_config = false);
         void coastMotor();
-        void turnXRipples(uint8_t ripples_target, bool stops = true, bool direction = true, uint8_t speed = 0, float voltage = 0, float current = 0);
-        void turnXRevolutions(uint8_t revolutions_target, bool stops = true, bool direction = true, uint8_t speed = 0, float voltage = 0, float current = 0);
+        void turnXRipples(uint16_t ripples_target, bool stops = true, bool direction = true, uint16_t speed = 0, float voltage = 0, float current = 0);
+        void turnXRevolutions(uint16_t revolutions_target, bool stops = true, bool direction = true, uint16_t speed = 0, float voltage = 0, float current = 0);
 
         // --- Other Functions ---
         void printMotorConfig(bool initial_config = false);
-        void drvPrint(const char* message);
         void printFaultStatus();
+        void setDebugStream(Stream* debugPort);
 };
 
 #endif // DRV8214_H
