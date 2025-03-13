@@ -64,18 +64,18 @@
 // --- BIT MASKS FOR CONTROL REGISTERS ---
 
 // FAULT REGISTER (0x00) - Read Only
-#define FAULT_FAULT       0x80  // Bit 7 - General fault detected - nFAULT pin is pulled down when FAULT bit is set
-#define FAULT_RSVD        0x40  // Bit 6 - Reserved
-#define FAULT_STALL       0x20  // Bit 5 - Stall detected (active high)
-#define FAULT_OCP         0x10  // Bit 4 - Overcurrent protection triggered (active high)
-#define FAULT_OVP         0x08  // Bit 3 - Overvoltage protection triggered (active high)
-#define FAULT_TSD         0x04  // Bit 2 - Thermal shutdown triggered (active high)
-#define FAULT_NPOR        0x02  // Bit 1 - Power-on reset occurred 
-#define FAULT_CNT_DONE    0x01  // Bit 0 - Set to 1 when RC_CNT exceeds the ripple counting threshold - can be cleared by CLR_CNT command
+#define FAULT_FAULT          0x80  // Bit 7 - General fault detected - nFAULT pin is pulled down when FAULT bit is set
+#define FAULT_RSVD           0x40  // Bit 6 - Reserved
+#define FAULT_STALL          0x20  // Bit 5 - Stall detected (active high)
+#define FAULT_OCP            0x10  // Bit 4 - Overcurrent protection triggered (active high)
+#define FAULT_OVP            0x08  // Bit 3 - Overvoltage protection triggered (active high)
+#define FAULT_TSD            0x04  // Bit 2 - Thermal shutdown triggered (active high)
+#define FAULT_NPOR           0x02  // Bit 1 - Power-on reset occurred 
+#define FAULT_CNT_DONE       0x01  // Bit 0 - Set to 1 when RC_CNT exceeds the ripple counting threshold - can be cleared by CLR_CNT command
 
 // REG STATUS REGISTER3 (0x06) - Read Only
-#define REG_STATUS3_RSVD       0xC0  // Bits 7-6 - Reserved
-#define REG_STATUS3_IN_DUTY    0x3F  // Bit 0-5 - Bridge control duty cycle (6-bit)
+#define REG_STATUS3_RSVD     0xC0  // Bits 7-6 - Reserved
+#define REG_STATUS3_IN_DUTY  0x3F  // Bit 0-5 - Bridge control duty cycle (6-bit)
 
 // CONFIG0 REGISTER (0x09) - Read/Write
 #define CONFIG0_EN_OUT       0x80  // Bit 7 - 0b: All driver FETs are Hi-Z. 1b: Enables the driver outputs.
@@ -149,7 +149,7 @@
 
 enum ControlMode { PWM, PH_EN };
 enum RegulationMode { CURRENT_FIXED, CURRENT_CYCLES, SPEED, VOLTAGE };
-// using I2C control, the speed/voltage cannot be controlled if using the CURRENT_FIXED or CURRENT_CYCLES regulation mode
+// when using I2C control, the speed/voltage cannot be controlled if using the CURRENT_FIXED or CURRENT_CYCLES regulation mode
 
 struct DRV8214_Config {
     bool I2CControlled = true;  // I2C Control of the driver (0: disabled, 1: enabled)
@@ -181,18 +181,18 @@ class DRV8214 {
 
     private:
         // Hardware and driver-specific settings
-        uint8_t address;     // I2C address of the driver (depends on A0, A1 pin settings, 9 possible addresses)
-        uint8_t driver_ID;   // ID of the driver if multiple drivers are used
-        uint16_t Ripropri;    // Value in Ohms of the resistor connected to IPROPI pin
-        uint16_t ripples_per_revolution;  // Number of ripples per revolution
-        uint8_t motor_internal_resistance;  // Internal resistance of the motor in Ohms
-        uint8_t motor_reduction_ratio;  // Reduction ratio of the motor
-        uint16_t motor_max_rpm;  // Maximum RPM of the motor
+        uint8_t  address;                   // I2C address of the driver (depends on A0, A1 pin settings, 9 possible addresses)
+        uint8_t  driver_ID;                 // ID of the driver if multiple drivers are used
+        uint16_t Ripropri;                  // Value in Ohms of the resistor connected to IPROPI pin
+        uint16_t ripples_per_revolution;    // Number of ripples per revolution
+        uint8_t  motor_internal_resistance; // Internal resistance of the motor in Ohms
+        uint8_t  motor_reduction_ratio;     // Reduction ratio of the motor
+        uint16_t motor_max_rpm;             // Maximum RPM of the motor
 
         // Configuration settings, all in a single struct
         DRV8214_Config config;
 
-        // Debug port
+        // Debug port used for printing messages
         Stream* _debugPort = nullptr;
 
         // Private functions
@@ -206,43 +206,43 @@ class DRV8214 {
         void init(const DRV8214_Config& config);
 
         // --- Helper Functions ---
-        uint8_t getDriverAdress();
-        uint8_t getDriverID();
-        uint8_t getSenseResistor();
-        uint8_t getRipplesPerRevolution();
-        uint8_t getFaultStatus();
+        uint8_t  getDriverAdress();
+        uint8_t  getDriverID();
+        uint8_t  getSenseResistor();
+        uint8_t  getRipplesPerRevolution();
+        uint8_t  getFaultStatus();
         uint32_t getMotorSpeedRPM();
         uint16_t getMotorSpeedRAD();
         uint16_t getMotorSpeedShaftRPM();
         uint16_t getMotorSpeedShaftRAD();
-        uint8_t getMotorSpeedRegister();
+        uint8_t  getMotorSpeedRegister();
         uint16_t getRippleCount();
-        float getMotorVoltage();
-        uint8_t getMotorVoltageRegister();
-        float getMotorCurrent();
-        uint8_t getMotorCurrentRegister();
-        uint8_t getDutyCycle();
-        uint8_t getCONFIG0();
+        float    getMotorVoltage();
+        uint8_t  getMotorVoltageRegister();
+        float    getMotorCurrent();
+        uint8_t  getMotorCurrentRegister();
+        uint8_t  getDutyCycle();
+        uint8_t  getCONFIG0();
         uint16_t getInrushDuration();
-        uint8_t getCONFIG3();
-        uint8_t getCONFIG4();
-        uint8_t getREG_CTRL0();
-        uint8_t getREG_CTRL1();
-        uint8_t getREG_CTRL2();
-        uint8_t getRC_CTRL0();
-        uint8_t getRC_CTRL1();
-        uint8_t getRC_CTRL2();
+        uint8_t  getCONFIG3();
+        uint8_t  getCONFIG4();
+        uint8_t  getREG_CTRL0();
+        uint8_t  getREG_CTRL1();
+        uint8_t  getREG_CTRL2();
+        uint8_t  getRC_CTRL0();
+        uint8_t  getRC_CTRL1();
+        uint8_t  getRC_CTRL2();
         uint16_t getRippleThreshold();
         uint16_t getRippleThresholdScaled();
         uint16_t getRippleThresholdScale();
-        uint8_t getKMC();
-        uint8_t getKMCScale();
-        uint8_t getFilterDamping();
-        uint8_t getRC_CTRL6();
-        uint8_t getRC_CTRL7();
-        uint8_t getRC_CTRL8();
+        uint8_t  getKMC();
+        uint8_t  getKMCScale();
+        uint8_t  getFilterDamping();
+        uint8_t  getRC_CTRL6();
+        uint8_t  getRC_CTRL7();
+        uint8_t  getRC_CTRL8();
 
-        // --- Control Functions ---
+        // --- Configuration Functions ---
         void enableHbridge();
         void disableHbridge();
         void setStallDetection(bool stall_en);
@@ -252,22 +252,18 @@ class DRV8214 {
         void resetFaultFlags();
         void enableDutyCycleControl();
         void disableDutyCycleControl();
-
         void setInrushDuration(uint16_t inrush_dur);
         void setCurrentRegMode(uint8_t mode);
         void setStallBehavior(bool behavior);
         void setInternalVoltageReference(float reference_voltage);
         void configureConfig3(uint8_t config3);
-
         void setI2CControl(bool I2CControl);
         void enablePWMControl();
         void enablePHENControl();
-
         void enableStallInterrupt();
         void disableStallInterrupt();
         void enableCountThresholdInterrupt();
         void disableCountThresholdInterrupt();
-
         void setBridgeBehaviorThresholdReached(bool stops);
         void setSoftStartStop(bool enable);
         void configureControl0(uint8_t control0);
