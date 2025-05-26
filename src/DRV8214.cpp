@@ -6,10 +6,10 @@
  * Licensed under the MIT License. See the LICENSE file in the project root for full license information.
  */
 
-#include "DRV8214.h"
+#include "drv8214.h"
 
 // Initialize the motor driver with default settings
-void DRV8214::init(const DRV8214_Config& cfg) {
+uint8_t DRV8214::init(const DRV8214_Config& cfg) {
 
     // Store the configuration settings
     config = cfg;
@@ -23,6 +23,7 @@ void DRV8214::init(const DRV8214_Config& cfg) {
     setStallDetection(config.stall_enabled); // Default to stall detection enabled
     setStallBehavior(config.stall_behavior); // Default to outputs disabled on stall
     enableStallInterrupt(); // Default to enable stall interrupt
+    enableCountThresholdInterrupt(); // Default to enable count threshold interrupt
     setBridgeBehaviorThresholdReached(config.bridge_behavior_thr_reached); // Default to H-bridge stays enabled when RC_CNT exceeds threshold
     setInternalVoltageReference(0); // Default to internal voltage reference of 500mV
     setSoftStartStop(config.soft_start_stop_enabled); // Default to soft start/stop disbaled
@@ -35,6 +36,8 @@ void DRV8214::init(const DRV8214_Config& cfg) {
     brakeMotor(true); // Default to brake motor
     enableErrorCorrection(false); // Default to disable error correction
     if (config.verbose) {printMotorConfig(true);}
+
+    return DRV8214_OK; // Return success code
 }
 
 // --- Helper Functions ---
@@ -56,15 +59,15 @@ uint8_t DRV8214::getRipplesPerRevolution() {
 }
 
 uint8_t DRV8214::getFaultStatus() {
-    return readRegister(address, DRV8214_FAULT);
+    return drv8214_i2c_read_register(address, DRV8214_FAULT);
 }
 
 uint32_t DRV8214::getMotorSpeedRPM() {
-    return ((readRegister(address, DRV8214_RC_STATUS1) * config.w_scale * 60) / (2 * PI * ripples_per_revolution));
+    return ((drv8214_i2c_read_register(address, DRV8214_RC_STATUS1) * config.w_scale * 60) / (2 * M_PI * ripples_per_revolution));
 }
 
 uint16_t DRV8214::getMotorSpeedRAD() {
-    return ((readRegister(address, DRV8214_RC_STATUS1) * config.w_scale) / ripples_per_revolution);
+    return ((drv8214_i2c_read_register(address, DRV8214_RC_STATUS1) * config.w_scale) / ripples_per_revolution);
 }
 
 uint16_t DRV8214::getMotorSpeedShaftRPM() {
@@ -76,96 +79,96 @@ uint16_t DRV8214::getMotorSpeedShaftRAD() {
 }
 
 uint8_t DRV8214::getMotorSpeedRegister() {
-    return readRegister(address, DRV8214_RC_STATUS1);
+    return drv8214_i2c_read_register(address, DRV8214_RC_STATUS1);
 }
 
 uint16_t DRV8214::getRippleCount() {
-    return (readRegister(address, DRV8214_RC_STATUS3) << 8) | readRegister(address, DRV8214_RC_STATUS2);
+    return (drv8214_i2c_read_register(address, DRV8214_RC_STATUS3) << 8) | drv8214_i2c_read_register(address, DRV8214_RC_STATUS2);
 }
 
 float DRV8214::getMotorVoltage() {
     if (config.voltage_range) {
-        float voltage = (readRegister(address, DRV8214_REG_STATUS1) / 255.0f) * 3.92f;
+        float voltage = (drv8214_i2c_read_register(address, DRV8214_REG_STATUS1) / 255.0f) * 3.92f;
         return voltage;
     } else {
         if (config.ovp_enabled) {
             // If OVP is enabled, the maximum voltage is 11 V
-            if (readRegister(address, DRV8214_REG_STATUS1) > 0xB0) {
+            if (drv8214_i2c_read_register(address, DRV8214_REG_STATUS1) > 0xB0) {
                 return 11.0f;
             } else {     // 00h corresponds to 0 V and B0h corresponds to 11 V.
-                float voltage = (readRegister(address, DRV8214_REG_STATUS1) / 176.0f) * 11.0f;
+                float voltage = (drv8214_i2c_read_register(address, DRV8214_REG_STATUS1) / 176.0f) * 11.0f;
                 return voltage;
             }
         } else {
-            float voltage = (readRegister(address, DRV8214_REG_STATUS1) / 255.0f) * 15.7f;
+            float voltage = (drv8214_i2c_read_register(address, DRV8214_REG_STATUS1) / 255.0f) * 15.7f;
             return voltage;
         }
     }
 }
 
 uint8_t DRV8214::getMotorVoltageRegister() {
-    return readRegister(address, DRV8214_REG_STATUS1);
+    return drv8214_i2c_read_register(address, DRV8214_REG_STATUS1);
 }
 
 float DRV8214::getMotorCurrent() {
     // 00h corresponds to 0 A and C0h corresponds to the maximum value set by the CS_GAIN_SEL bit
-    float current = (readRegister(address, DRV8214_REG_STATUS2) / 192.0f) * config.MaxCurrent;
+    float current = (drv8214_i2c_read_register(address, DRV8214_REG_STATUS2) / 192.0f) * config.MaxCurrent;
     return current;
 }
 
 uint8_t DRV8214::getMotorCurrentRegister() {
-    return readRegister(address, DRV8214_REG_STATUS2);
+    return drv8214_i2c_read_register(address, DRV8214_REG_STATUS2);
 }
 
 uint8_t DRV8214::getDutyCycle() {
-    uint8_t dutyCycle = readRegister(address, DRV8214_REG_STATUS3) & REG_STATUS3_IN_DUTY;
+    uint8_t dutyCycle = drv8214_i2c_read_register(address, DRV8214_REG_STATUS3) & REG_STATUS3_IN_DUTY;
     return (dutyCycle * 100) / 63; // Convert 6-bit value to percentage
 }
 
 uint8_t DRV8214::getCONFIG0() {
-    return readRegister(address, DRV8214_CONFIG0);
+    return drv8214_i2c_read_register(address, DRV8214_CONFIG0);
 }
 
 uint16_t DRV8214::getInrushDuration() {
-    return (readRegister(address, DRV8214_CONFIG1) << 8) | readRegister(address, DRV8214_CONFIG2);
+    return (drv8214_i2c_read_register(address, DRV8214_CONFIG1) << 8) | drv8214_i2c_read_register(address, DRV8214_CONFIG2);
 }
 
 uint8_t DRV8214::getCONFIG3() {
-    return readRegister(address, DRV8214_CONFIG3);
+    return drv8214_i2c_read_register(address, DRV8214_CONFIG3);
 }
 
 uint8_t DRV8214::getCONFIG4() {
-    return readRegister(address, DRV8214_CONFIG4);
+    return drv8214_i2c_read_register(address, DRV8214_CONFIG4);
 }
 
 uint8_t DRV8214::getREG_CTRL0() {
-    return readRegister(address, DRV8214_REG_CTRL0);
+    return drv8214_i2c_read_register(address, DRV8214_REG_CTRL0);
 }
 
 uint8_t DRV8214::getREG_CTRL1() {
-    return readRegister(address, DRV8214_REG_CTRL1);
+    return drv8214_i2c_read_register(address, DRV8214_REG_CTRL1);
 }
 
 uint8_t DRV8214::getREG_CTRL2() {
-    return readRegister(address, DRV8214_REG_CTRL2);
+    return drv8214_i2c_read_register(address, DRV8214_REG_CTRL2);
 }
 
 uint8_t DRV8214::getRC_CTRL0() {
-    return readRegister(address, DRV8214_RC_CTRL0);
+    return drv8214_i2c_read_register(address, DRV8214_RC_CTRL0);
 }
 
 uint8_t DRV8214::getRC_CTRL1() {
-    return readRegister(address, DRV8214_RC_CTRL1);
+    return drv8214_i2c_read_register(address, DRV8214_RC_CTRL1);
 }
 
 uint8_t DRV8214::getRC_CTRL2() {
-    return readRegister(address, DRV8214_RC_CTRL2);
+    return drv8214_i2c_read_register(address, DRV8214_RC_CTRL2);
 }
 
 uint16_t DRV8214::getRippleThreshold()
 {
-    uint8_t ctrl2 = readRegister(address, DRV8214_RC_CTRL2);
-    uint8_t ctrl1 = readRegister(address, DRV8214_RC_CTRL1);
+    uint8_t ctrl2 = drv8214_i2c_read_register(address, DRV8214_RC_CTRL2);
+    uint8_t ctrl1 = drv8214_i2c_read_register(address, DRV8214_RC_CTRL1);
     // top two bits are bits 1..0 in ctrl2
     uint16_t thr_high = (ctrl2 & 0x03) << 8; // shift them to bits 9..8
     uint16_t thr_low  = ctrl1;               // bits 7..0
@@ -182,79 +185,79 @@ uint16_t DRV8214::getRippleThresholdScaled() {
 }
 
 uint16_t DRV8214::getRippleThresholdScale() {
-    config.ripple_threshold_scale = (readRegister(address, DRV8214_RC_CTRL2) & RC_CTRL2_RC_THR_SCALE) >> 2;
+    config.ripple_threshold_scale = (drv8214_i2c_read_register(address, DRV8214_RC_CTRL2) & RC_CTRL2_RC_THR_SCALE) >> 2;
     return config.ripple_threshold_scale;
 }
 
 uint8_t DRV8214::getKMC() {
-    return readRegister(address, DRV8214_RC_CTRL4);
+    return drv8214_i2c_read_register(address, DRV8214_RC_CTRL4);
 }
 
 uint8_t DRV8214::getKMCScale() {
-    return (readRegister(address, DRV8214_RC_CTRL2) >> 4) & 0x03;
+    return (drv8214_i2c_read_register(address, DRV8214_RC_CTRL2) >> 4) & 0x03;
 }
 
 uint8_t DRV8214::getFilterDamping() {
-    return (readRegister(address, DRV8214_RC_CTRL5) >> 4) & 0x0F;
+    return (drv8214_i2c_read_register(address, DRV8214_RC_CTRL5) >> 4) & 0x0F;
 }
 
 uint8_t DRV8214::getRC_CTRL6() {
-    return readRegister(address, DRV8214_RC_CTRL6);
+    return drv8214_i2c_read_register(address, DRV8214_RC_CTRL6);
 }
 
 uint8_t DRV8214::getRC_CTRL7() {
-    return readRegister(address, DRV8214_RC_CTRL7);
+    return drv8214_i2c_read_register(address, DRV8214_RC_CTRL7);
 }
 
 uint8_t DRV8214::getRC_CTRL8() {
-    return readRegister(address, DRV8214_RC_CTRL8);
+    return drv8214_i2c_read_register(address, DRV8214_RC_CTRL8);
 }
 
 // --- Control Functions ---
 void DRV8214::enableHbridge() {
-    modifyRegister(address, DRV8214_CONFIG0, CONFIG0_EN_OUT, true);
+    drv8214_i2c_modify_register(address, DRV8214_CONFIG0, CONFIG0_EN_OUT, true);
 }
 
 void DRV8214::disableHbridge() {
-    modifyRegister(address, DRV8214_CONFIG0, CONFIG0_EN_OUT, false);
+    drv8214_i2c_modify_register(address, DRV8214_CONFIG0, CONFIG0_EN_OUT, false);
 }
 
 void DRV8214::setStallDetection(bool stall_en) {
     config.stall_enabled = stall_en;
-    modifyRegister(address, DRV8214_CONFIG3, CONFIG0_EN_STALL, stall_en);
+    drv8214_i2c_modify_register(address, DRV8214_CONFIG3, CONFIG0_EN_STALL, stall_en);
 }
 
 void DRV8214::setVoltageRange(bool range) {
     config.voltage_range = range;
-    modifyRegister(address, DRV8214_CONFIG0, CONFIG0_VM_GAIN_SEL, range);
+    drv8214_i2c_modify_register(address, DRV8214_CONFIG0, CONFIG0_VM_GAIN_SEL, range);
 }
 
 void DRV8214::setOvervoltageProtection(bool OVP) {
     config.ovp_enabled = OVP;
-    modifyRegister(address, DRV8214_CONFIG0, CONFIG0_EN_OVP, true);
+    drv8214_i2c_modify_register(address, DRV8214_CONFIG0, CONFIG0_EN_OVP, true);
 }
 
 void DRV8214::resetRippleCounter() {
-    modifyRegister(address, DRV8214_CONFIG0, CONFIG0_CLR_CNT, true);
+    drv8214_i2c_modify_register(address, DRV8214_CONFIG0, CONFIG0_CLR_CNT, true);
 }
 
 void DRV8214::resetFaultFlags() {
     disableHbridge();
-    modifyRegister(address, DRV8214_CONFIG0, CONFIG0_CLR_FLT, true);
+    drv8214_i2c_modify_register(address, DRV8214_CONFIG0, CONFIG0_CLR_FLT, true);
     enableHbridge();
 }
 
 void DRV8214::enableDutyCycleControl() {
-    modifyRegister(address, DRV8214_CONFIG0, CONFIG0_DUTY_CTRL, true);
+    drv8214_i2c_modify_register(address, DRV8214_CONFIG0, CONFIG0_DUTY_CTRL, true);
 }
 
 void DRV8214::disableDutyCycleControl() {
-    modifyRegister(address, DRV8214_CONFIG0, CONFIG0_DUTY_CTRL, false);
+    drv8214_i2c_modify_register(address, DRV8214_CONFIG0, CONFIG0_DUTY_CTRL, false);
 }
 
 void DRV8214::setInrushDuration(uint16_t threshold) {
-    writeRegister(address, DRV8214_CONFIG1, (threshold >> 8) & 0xFF);
-    writeRegister(address, DRV8214_CONFIG2, threshold & 0xFF);
+    drv8214_i2c_write_register(address, DRV8214_CONFIG1, (threshold >> 8) & 0xFF);
+    drv8214_i2c_write_register(address, DRV8214_CONFIG2, threshold & 0xFF);
 }
 
 void DRV8214::setCurrentRegMode(uint8_t mode) {
@@ -280,7 +283,7 @@ void DRV8214::setCurrentRegMode(uint8_t mode) {
     default:
         break;
     }
-    modifyRegisterBits(address, DRV8214_CONFIG3, CONFIG3_IMODE, mode);
+    drv8214_i2c_modify_register_bits(address, DRV8214_CONFIG3, CONFIG3_IMODE, mode);
 }
 
 void DRV8214::setStallBehavior(bool behavior) {
@@ -288,7 +291,7 @@ void DRV8214::setStallBehavior(bool behavior) {
     // When SMODE = 0b, the STALL bit becomes 1b, the outputs are disabled
     // When SMODE = 1b, the STALL bit becomes 1b, but the outputs continue to drive current into the motor
     config.stall_behavior = behavior;
-    modifyRegister(address, DRV8214_CONFIG3, CONFIG3_SMODE, behavior);
+    drv8214_i2c_modify_register(address, DRV8214_CONFIG3, CONFIG3_SMODE, behavior);
 }
 
 void DRV8214::setInternalVoltageReference(float reference_voltage) {
@@ -296,59 +299,59 @@ void DRV8214::setInternalVoltageReference(float reference_voltage) {
     // If INT_VREF bit is set to 1b, VVREF is internally selected with a fixed value of 500 mV.
     if (reference_voltage == 0) { 
         config.Vref = 0.5f; // Default
-        modifyRegister(address, DRV8214_CONFIG3, CONFIG3_INT_VREF, true);
+        drv8214_i2c_modify_register(address, DRV8214_CONFIG3, CONFIG3_INT_VREF, true);
     } else { 
         config.Vref = reference_voltage;
-        modifyRegister(address, DRV8214_CONFIG3, CONFIG3_INT_VREF, false);
+        drv8214_i2c_modify_register(address, DRV8214_CONFIG3, CONFIG3_INT_VREF, false);
     }
 }
 
 void DRV8214::configureConfig3(uint8_t config3) {
-    writeRegister(address, DRV8214_CONFIG3, config3);
+    drv8214_i2c_write_register(address, DRV8214_CONFIG3, config3);
 }
 
 void DRV8214::setI2CControl(bool I2CControl) {
     config.I2CControlled = I2CControl;
-    modifyRegister(address, DRV8214_CONFIG4, CONFIG4_I2C_BC, I2CControl);
+    drv8214_i2c_modify_register(address, DRV8214_CONFIG4, CONFIG4_I2C_BC, I2CControl);
 }
 
 void DRV8214::enablePWMControl() {
-    modifyRegister(address, DRV8214_CONFIG4, CONFIG4_PMODE, true);
+    drv8214_i2c_modify_register(address, DRV8214_CONFIG4, CONFIG4_PMODE, true);
 }
 
 void DRV8214::enablePHENControl() {
-    modifyRegister(address, DRV8214_CONFIG4, CONFIG4_PMODE, false);
+    drv8214_i2c_modify_register(address, DRV8214_CONFIG4, CONFIG4_PMODE, false);
 }
 
 void DRV8214::enableStallInterrupt() {
-    modifyRegister(address, DRV8214_CONFIG4, CONFIG4_STALL_REP, true);
+    drv8214_i2c_modify_register(address, DRV8214_CONFIG4, CONFIG4_STALL_REP, true);
 }
 
 void DRV8214::disableStallInterrupt() {
-    modifyRegister(address, DRV8214_CONFIG4, CONFIG4_STALL_REP, false);
+    drv8214_i2c_modify_register(address, DRV8214_CONFIG4, CONFIG4_STALL_REP, false);
 }
 
 void DRV8214::enableCountThresholdInterrupt() {
-    modifyRegister(address, DRV8214_CONFIG4, CONFIG4_RC_REP, true);
+    drv8214_i2c_modify_register_bits(address, DRV8214_CONFIG4, CONFIG4_RC_REP, 0b10000000);
 }
 
 void DRV8214::disableCountThresholdInterrupt() {
-    modifyRegister(address, DRV8214_CONFIG4, CONFIG4_RC_REP, false);
+    drv8214_i2c_modify_register(address, DRV8214_CONFIG4, CONFIG4_RC_REP, false);
 }
 
 void DRV8214::setBridgeBehaviorThresholdReached(bool stops) {
     // stops = 0b: H-bridge stays enabled when RC_CNT exceeds threshold
     // stops = 1b: H-bridge is disabled (High-Z) when RC_CNT exceeds threshold
     config.bridge_behavior_thr_reached = stops; 
-    modifyRegister(address, DRV8214_RC_CTRL0, RC_CTRL0_RC_HIZ, stops);
+    drv8214_i2c_modify_register(address, DRV8214_RC_CTRL0, RC_CTRL0_RC_HIZ, stops);
 }
 
 void DRV8214::setSoftStartStop(bool enable) {
-    modifyRegister(address, DRV8214_REG_CTRL0, REG_CTRL0_EN_SS, enable);
+    drv8214_i2c_modify_register(address, DRV8214_REG_CTRL0, REG_CTRL0_EN_SS, enable);
 }
 
 void DRV8214::configureControl0(uint8_t control0) {
-    writeRegister(address, DRV8214_REG_CTRL0, control0);
+    drv8214_i2c_write_register(address, DRV8214_REG_CTRL0, control0);
 }
 
 void DRV8214::setRegulationAndStallCurrent(float requested_current) {
@@ -396,7 +399,7 @@ void DRV8214::setRegulationAndStallCurrent(float requested_current) {
         config.MaxCurrent = 4.0f;
     }
 
-    modifyRegisterBits(address, DRV8214_RC_CTRL0, RC_CTRL0_CS_GAIN_SEL, cs_gain_sel);
+    drv8214_i2c_modify_register_bits(address, DRV8214_RC_CTRL0, RC_CTRL0_CS_GAIN_SEL, cs_gain_sel);
 
     // Update Itrip calculation with the new scale
     config.Itrip = config.Vref / (Ripropri * config.Aipropri);
@@ -412,7 +415,7 @@ void DRV8214::setRippleSpeed(uint16_t speed) {
     if (speed > motor_max_rpm) { speed = motor_max_rpm; } // Cap speed to the maximum RPM of the motor
 
     // Find the corresponding ripples frequency (Hz) value
-    uint32_t ripple_speed = (speed * motor_reduction_ratio * ripples_per_revolution * 2 * PI) / 60;
+    uint32_t ripple_speed = (speed * motor_reduction_ratio * ripples_per_revolution * 2 * M_PI) / 60;
 
     // Define max feasible ripple speed based on 8-bit WSET_VSET and max scaling factor (128)
     const uint16_t MAX_SPEED = 32640; // 255 * 128 = 32640 rad/s
@@ -455,8 +458,8 @@ void DRV8214::setRippleSpeed(uint16_t speed) {
         snprintf(buffer, sizeof(buffer), "WSET_VSET: %d | W_SCALE: %d or 0b%d | Effective Target Speed: %d rad/s\n", WSET_VSET, config.w_scale, W_SCALE, WSET_VSET * config.w_scale);
         drvPrint(buffer);
     }
-    writeRegister(address, DRV8214_REG_CTRL1, WSET_VSET);
-    modifyRegisterBits(address, DRV8214_REG_CTRL0, REG_CTRL0_W_SCALE, W_SCALE);
+    drv8214_i2c_write_register(address, DRV8214_REG_CTRL1, WSET_VSET);
+    drv8214_i2c_modify_register_bits(address, DRV8214_REG_CTRL0, REG_CTRL0_W_SCALE, W_SCALE);
 }
 
 void DRV8214::setVoltageSpeed(float voltage) {
@@ -469,31 +472,31 @@ void DRV8214::setVoltageSpeed(float voltage) {
         // Apply formula from table 8-23: WSET_VSET = voltage * (255 / 3.92)
         float scaled = voltage * (255.0f / 3.92f);
         uint8_t regVal = static_cast<uint8_t>(scaled + 0.5f); // Round to nearest integer
-        writeRegister(address, DRV8214_REG_CTRL1, regVal);
+        drv8214_i2c_write_register(address, DRV8214_REG_CTRL1, regVal);
     } else {
         // VM_GAIN_SEL = 0 → Range: 0 to 15.7 V
         if (voltage > 15.7f) { voltage = 11.0f; } // Cap voltage to 11 V because of Overvoltage Protection
         // Apply formula from table 8-23: WSET_VSET = voltage * (255 / 15.7)
         float scaled = voltage * (255.0f / 15.7f);
         uint8_t regVal = static_cast<uint8_t>(scaled + 0.5f); // Round to nearest integer
-        writeRegister(address, DRV8214_REG_CTRL1, regVal);
+        drv8214_i2c_write_register(address, DRV8214_REG_CTRL1, regVal);
     }
 }
 
 void DRV8214::configureControl2(uint8_t control2) {
-    writeRegister(address, DRV8214_REG_CTRL2, control2);
+    drv8214_i2c_write_register(address, DRV8214_REG_CTRL2, control2);
 }
 
 void DRV8214::enableRippleCount(bool enable) {
-    modifyRegister(address, DRV8214_RC_CTRL0, RC_CTRL0_EN_RC, enable);
+    drv8214_i2c_modify_register(address, DRV8214_RC_CTRL0, RC_CTRL0_EN_RC, enable);
 }
 
 void DRV8214::enableErrorCorrection(bool enable) {
-    modifyRegister(address, DRV8214_RC_CTRL0, RC_CTRL0_DIS_EC, !enable);
+    drv8214_i2c_modify_register(address, DRV8214_RC_CTRL0, RC_CTRL0_DIS_EC, !enable);
 }
 
 void DRV8214::configureRippleCount0(uint8_t ripple0) {
-    writeRegister(address, DRV8214_RC_CTRL0, ripple0);
+    drv8214_i2c_write_register(address, DRV8214_RC_CTRL0, ripple0);
 }
 
 void DRV8214::setRippleCountThreshold(uint16_t threshold) {
@@ -544,29 +547,29 @@ void DRV8214::setRippleCountThreshold(uint16_t threshold) {
     // Split into lower 8 bits and upper 2 bits
     uint8_t rc_thr_low  = rc_thr & 0xFF;         // bits 7..0
     uint8_t rc_thr_high = (rc_thr >> 8) & 0x03;  // bits 9..8
-    writeRegister(address, DRV8214_RC_CTRL1, rc_thr_low);
+    drv8214_i2c_write_register(address, DRV8214_RC_CTRL1, rc_thr_low);
     setRippleThresholdScale(rc_thr_scale_bits);
-    modifyRegisterBits(address, DRV8214_RC_CTRL2, RC_CTRL2_RC_THR_HIGH, rc_thr_high);
+    drv8214_i2c_modify_register_bits(address, DRV8214_RC_CTRL2, RC_CTRL2_RC_THR_HIGH, rc_thr_high);
 }
 
 void DRV8214::setRippleThresholdScale(uint8_t scale) {
     scale = scale & 0x03;
     scale = scale << 2; //make sure the 2 bits of scale are placed on bit 2 and 3
-    modifyRegisterBits(address, DRV8214_RC_CTRL2, RC_CTRL2_RC_THR_SCALE, scale);
+    drv8214_i2c_modify_register_bits(address, DRV8214_RC_CTRL2, RC_CTRL2_RC_THR_SCALE, scale);
 }
 
 void DRV8214::setKMCScale(uint8_t scale) {
     scale = scale << 4; //make sure the 2 bits of scale are placed on bit 4 and 5
-    modifyRegisterBits(address, DRV8214_RC_CTRL2, RC_CTRL2_KMC_SCALE, scale);
+    drv8214_i2c_modify_register_bits(address, DRV8214_RC_CTRL2, RC_CTRL2_KMC_SCALE, scale);
 }
 
 void DRV8214::setMotorInverseResistance(uint8_t resistance) {
-    writeRegister(address, DRV8214_RC_CTRL3, resistance);
+    drv8214_i2c_write_register(address, DRV8214_RC_CTRL3, resistance);
 }
 
 void DRV8214::setMotorInverseResistanceScale(uint8_t scale) {
     scale = scale << 6; //make sure the 2 bits of scale are placed on bit 6 and 7
-    modifyRegisterBits(address, DRV8214_RC_CTRL2, RC_CTRL2_INV_R_SCALE, scale);
+    drv8214_i2c_modify_register_bits(address, DRV8214_RC_CTRL2, RC_CTRL2_INV_R_SCALE, scale);
 }
 
 void DRV8214::setResistanceRelatedParameters() {
@@ -606,23 +609,23 @@ void DRV8214::setResistanceRelatedParameters() {
 }
 
 void DRV8214::setKMC(uint8_t factor) {
-    writeRegister(address, DRV8214_RC_CTRL4, factor);
+    drv8214_i2c_write_register(address, DRV8214_RC_CTRL4, factor);
 }
 
 void DRV8214::setFilterDamping(uint8_t damping) {
-    writeRegister(address, DRV8214_RC_CTRL5, damping);
+    drv8214_i2c_write_register(address, DRV8214_RC_CTRL5, damping);
 }
 
 void DRV8214::configureRippleCount6(uint8_t ripple6) {
-    writeRegister(address, DRV8214_RC_CTRL6, ripple6);
+    drv8214_i2c_write_register(address, DRV8214_RC_CTRL6, ripple6);
 }
 
 void DRV8214::configureRippleCount7(uint8_t ripple7) {
-    writeRegister(address, DRV8214_RC_CTRL7, ripple7);
+    drv8214_i2c_write_register(address, DRV8214_RC_CTRL7, ripple7);
 }
 
 void DRV8214::configureRippleCount8(uint8_t ripple8) {
-    writeRegister(address, DRV8214_RC_CTRL8, ripple8);
+    drv8214_i2c_write_register(address, DRV8214_RC_CTRL8, ripple8);
 }
 
 // --- Motor Control Functions ---
@@ -657,7 +660,7 @@ void DRV8214::setRegulationMode(RegulationMode regulation) {
             break;
     }
     config.regulation_mode = regulation;
-    modifyRegisterBits(address, DRV8214_REG_CTRL0, REG_CTRL0_REG_CTRL, reg_ctrl);
+    drv8214_i2c_modify_register_bits(address, DRV8214_REG_CTRL0, REG_CTRL0_REG_CTRL, reg_ctrl);
 }
 
 void DRV8214::turnForward(uint16_t speed, float voltage, float requested_current) {
@@ -676,17 +679,18 @@ void DRV8214::turnForward(uint16_t speed, float voltage, float requested_current
             setVoltageSpeed(voltage);
             break;
     }
-    enableHbridge();
+    
     if (config.control_mode == PWM) {
         // Table 8-5 => Forward => Input1=1, Input2=0
-        modifyRegister(address, DRV8214_CONFIG4, CONFIG4_I2C_EN_IN1, true);  // Input1=1
-        modifyRegister(address, DRV8214_CONFIG4, CONFIG4_I2C_PH_IN2, false); // Input2=0
+        drv8214_i2c_modify_register(address, DRV8214_CONFIG4, CONFIG4_I2C_EN_IN1, true);  // Input1=1
+        drv8214_i2c_modify_register(address, DRV8214_CONFIG4, CONFIG4_I2C_PH_IN2, false); // Input2=0
     } 
     else { // PH/EN mode
         // Table 8-4 => Forward => EN=1, PH=1
-        modifyRegister(address, DRV8214_CONFIG4, CONFIG4_I2C_EN_IN1, true); // EN=1
-        modifyRegister(address, DRV8214_CONFIG4, CONFIG4_I2C_PH_IN2, true); // PH=1
+        drv8214_i2c_modify_register(address, DRV8214_CONFIG4, CONFIG4_I2C_EN_IN1, true); // EN=1
+        drv8214_i2c_modify_register(address, DRV8214_CONFIG4, CONFIG4_I2C_PH_IN2, true); // PH=1
     }
+    enableHbridge();
     if (config.verbose) { drvPrint("Turning Forward\n"); }
 }
 
@@ -708,13 +712,13 @@ void DRV8214::turnReverse(uint16_t speed, float voltage, float requested_current
     }
     if (config.control_mode == PWM) {
         // Table 8-5 => Reverse => Input1=0, Input2=1
-        modifyRegister(address, DRV8214_CONFIG4, CONFIG4_I2C_EN_IN1, false);
-        modifyRegister(address, DRV8214_CONFIG4, CONFIG4_I2C_PH_IN2, true);
+        drv8214_i2c_modify_register(address, DRV8214_CONFIG4, CONFIG4_I2C_EN_IN1, false);
+        drv8214_i2c_modify_register(address, DRV8214_CONFIG4, CONFIG4_I2C_PH_IN2, true);
     } 
     else { // PH/EN mode
         // Table 8-4 => Reverse => EN=1, PH=0
-        modifyRegister(address, DRV8214_CONFIG4, CONFIG4_I2C_EN_IN1, true);
-        modifyRegister(address, DRV8214_CONFIG4, CONFIG4_I2C_PH_IN2, false);
+        drv8214_i2c_modify_register(address, DRV8214_CONFIG4, CONFIG4_I2C_EN_IN1, true);
+        drv8214_i2c_modify_register(address, DRV8214_CONFIG4, CONFIG4_I2C_PH_IN2, false);
     }
     if (config.verbose) { drvPrint("Turning Reverse\n"); }
 }
@@ -723,14 +727,14 @@ void DRV8214::brakeMotor(bool initial_config) {
     enableHbridge();
     if (config.control_mode == PWM) {
         // Table 8-5 => Brake => Input1=1, Input2=1 => both outputs low
-        modifyRegister(address, DRV8214_CONFIG4, CONFIG4_I2C_EN_IN1, true);
-        modifyRegister(address, DRV8214_CONFIG4, CONFIG4_I2C_PH_IN2, true);
+        drv8214_i2c_modify_register(address, DRV8214_CONFIG4, CONFIG4_I2C_EN_IN1, true);
+        drv8214_i2c_modify_register(address, DRV8214_CONFIG4, CONFIG4_I2C_PH_IN2, true);
     }
     else { // PH/EN mode
         // Table 8-4 => Brake => EN=0 => outputs go low
-        modifyRegister(address, DRV8214_CONFIG4, CONFIG4_I2C_EN_IN1, false);
+        drv8214_i2c_modify_register(address, DRV8214_CONFIG4, CONFIG4_I2C_EN_IN1, false);
         // PH can be 0 or 1, the datasheet shows "X" => still brake with EN=0
-        modifyRegister(address, DRV8214_CONFIG4, CONFIG4_I2C_PH_IN2, false);
+        drv8214_i2c_modify_register(address, DRV8214_CONFIG4, CONFIG4_I2C_PH_IN2, false);
     }
     if (config.verbose & !initial_config) { drvPrint("Braking Motor\n"); }
 }
@@ -739,13 +743,13 @@ void DRV8214::coastMotor() {
     enableHbridge();
     if (config.control_mode == PWM) {
         // Table 8-5 => Coast => Input1=0, Input2=0 => High-Z while awake
-        modifyRegister(address, DRV8214_CONFIG4, CONFIG4_I2C_EN_IN1, false);
-        modifyRegister(address, DRV8214_CONFIG4, CONFIG4_I2C_PH_IN2, false);
+        drv8214_i2c_modify_register(address, DRV8214_CONFIG4, CONFIG4_I2C_EN_IN1, false);
+        drv8214_i2c_modify_register(address, DRV8214_CONFIG4, CONFIG4_I2C_PH_IN2, false);
     }
     else {
         // PH/EN mode has no "coast" state in the datasheet table. There's no official high-Z while awake.
         // We could do "sleep" or "brake," or just do nothing here;
-        Serial.println("PH/EN mode does not support coast (High-Z) while awake.");
+        drvPrint("PH/EN mode does not support coast (High-Z) while awake.");
     }
     if (config.verbose) { drvPrint("Coasting Motor\n"); }
 }
@@ -825,16 +829,16 @@ void DRV8214::drvPrint(const char* msg) {
         }
     #elif defined(DRV8214_PLATFORM_STM32)
         // Option 1: Using HAL_UART_Transmit directly
-        HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+        // HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
     
         // Option 2: If you have retargeted printf to UART, you could simply use:
-        // printf("%s", msg);
+        printf("%s", msg);
     #endif
 }
 
 void DRV8214::printFaultStatus() {
     char buffer[256];  // Buffer for formatted output
-    uint8_t faultReg = readRegister(address, DRV8214_FAULT);
+    uint8_t faultReg = drv8214_i2c_read_register(address, DRV8214_FAULT);
 
     snprintf(buffer, sizeof(buffer), "DRV8214 Driver %d - FAULT Register Status:\n", driver_ID);
     drvPrint(buffer);
@@ -870,6 +874,8 @@ void DRV8214::printFaultStatus() {
     }
 }
 
-void DRV8214::setDebugStream(Stream* debugPort) {
-    _debugPort = debugPort;
-}
+#ifdef DRV8214_PLATFORM_ARDUINO
+    void DRV8214::setDebugStream(Stream* debugPort) {
+        _debugPort = debugPort;
+    }
+#endif
