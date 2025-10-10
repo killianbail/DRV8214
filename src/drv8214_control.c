@@ -36,6 +36,7 @@ float drv8214_get_target_motor_voltage(Drv8214 *driver) {
     switch(drv8214_get_regulation_range(driver)) {
         case DRV8214_0_V_TO_15_7_V: return TARGET * (255.0f / 15.7f);
         case DRV8214_0_V_TO_3_82_V: return TARGET * (255.0f / 3.92f);
+        default:                    return NAN;
     }
 }
 
@@ -48,6 +49,7 @@ float drv8214_get_target_motor_speed(Drv8214 *driver) {
         case DRV8214_W_SCALE_32:    return TARGET * 32.0f;
         case DRV8214_W_SCALE_64:    return TARGET * 64.0f;
         case DRV8214_W_SCALE_128:   return TARGET * 128.0f;
+        default:                    return NAN;
     }
 }
 

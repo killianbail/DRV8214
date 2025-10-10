@@ -26,29 +26,29 @@ extern "C" {
 
 // Bit masks for configuration registers
 
-#define DRV8214_CONFIG0_EN_OUT              0b1000'0000 // Enable the driver outputs if set.
-#define DRV8214_CONFIG0_EN_OVP              0b0100'0000 // Enable the over-voltage protection if set (set by default).
-#define DRV8214_CONFIG0_EN_STALL            0b0010'0000 // Enable the stall detection feature if set (set by default).
-#define DRV8214_CONFIG0_VSNS_SEL            0b0001'0000 // Enable the digital low-pass filter for voltage regulation if set. Use the analog low-pass filter otherwise (recommended).
-#define DRV8214_CONFIG0_VM_GAIN_SEL         0b0000'1000 // Select to voltage range used during small voltage regulation (0 V to 15.7 V by default, 0 V to 3.92 V when set).
-#define DRV8214_CONFIG0_CLR_CNT             0b0000'0100 // Reset the ripple counter to 0 and clear CNT_DONE when set, also release nFAULT when RC_REP = 0b10 (automatically reset after a set).
-#define DRV8214_CONFIG0_CLR_FLT             0b0000'0010 // Clear all latched faults when set (automatically reset after a set).
-#define DRV8214_CONFIG0_DUTY_CTRL           0b0000'0001 // When speed regulation is disabled, setting this bit allow writing the desired PWM in EXT_DUTY.
-#define DRV8214_CONFIG1_TINRUSH             0b1111'1111 // 8 LSBs of inrush time, for which the stall detection will not trigger.
-#define DRV8214_CONFIG2_TINRUSH             0b1111'1111 // 8 MSBs of inrush time, for which the stall detection will not trigger.
-#define DRV8214_CONFIG3_IMODE               0b1100'0000 // Determine the behavior of current regulation (0b10 by default).
-#define DRV8214_CONFIG3_SMODE               0b0010'0000 // Program the device response to a stall condition (set by default).
-#define DRV8214_CONFIG3_INT_VREF            0b0001'0000 // Fix internal reference voltage to 0.5 V internally when set, voltage is not fixed internally otherwise.
-#define DRV8214_CONFIG3_TBLANK              0b0000'1000 // Set current sense blanking time (1.8 μs by default, 1.0 μs when set).
-#define DRV8214_CONFIG3_TDEG                0b0000'0100 // Set the current regulation and stall detection deglitch time (2 μs by default, 1 μs when set).
-#define DRV8214_CONFIG3_OCP_MODE            0b0000'0010 // Program the device response to an overcurrent event (device perform auto-retry by default, device is latched off when set).
-#define DRV8214_CONFIG3_TSD_MODE            0b0000'0001 // Program device response to an over-temperature event (device perform auto-retry by default, device is latched off when set).
-#define DRV8214_CONFIG4_RC_REP              0b1100'0000 // Determines whether nFAULT is pulled low when RC_CNT exceeds threshold, and the behavior of RC_CNT when it reaches maximum value of 65535.
-#define DRV8214_CONFIG4_STALL_REP           0b0010'0000 // Determines whether stall is reported on the nFAULT pin. When set, nFAULT is low whenever stall is detected. When reset, stall is not reported on nFAULT output (set by default).
-#define DRV8214_CONFIG4_CBC_REP             0b0001'0000 // In cycle-by-cycle current regulation mode, when set, nFAULT is pulled low when H-Bridge enter internal current regulation, and is not otherwise (set by default).
-#define DRV8214_CONFIG4_PMODE               0b0000'1000 // Change between phase / enable mode (PH/EN) when reset or PWM mode when set (set by default).
-#define DRV8214_CONFIG4_I2C_BC              0b0000'0100 // Bridge control is confgured by INx pins when reset or by I2C bits in I2C_EN_IN1 and I2C_PH_IN2 when set.
-#define DRV8214_CONFIG4_I2C_BC_MODE         0b0000'0011 // PH / EN or PWM input bits for internal bridge control when I2C_BC is set, ignored if I2C_BC is reset.
+#define DRV8214_CONFIG0_EN_OUT              0b10000000  // Enable the driver outputs if set.
+#define DRV8214_CONFIG0_EN_OVP              0b01000000  // Enable the over-voltage protection if set (set by default).
+#define DRV8214_CONFIG0_EN_STALL            0b00100000  // Enable the stall detection feature if set (set by default).
+#define DRV8214_CONFIG0_VSNS_SEL            0b00010000  // Enable the digital low-pass filter for voltage regulation if set. Use the analog low-pass filter otherwise (recommended).
+#define DRV8214_CONFIG0_VM_GAIN_SEL         0b00001000  // Select to voltage range used during small voltage regulation (0 V to 15.7 V by default, 0 V to 3.92 V when set).
+#define DRV8214_CONFIG0_CLR_CNT             0b00000100  // Reset the ripple counter to 0 and clear CNT_DONE when set, also release nFAULT when RC_REP = 0b10 (automatically reset after a set).
+#define DRV8214_CONFIG0_CLR_FLT             0b00000010  // Clear all latched faults when set (automatically reset after a set).
+#define DRV8214_CONFIG0_DUTY_CTRL           0b00000001  // When speed regulation is disabled, setting this bit allow writing the desired PWM in EXT_DUTY.
+#define DRV8214_CONFIG1_TINRUSH             0b11111111  // 8 LSBs of inrush time, for which the stall detection will not trigger.
+#define DRV8214_CONFIG2_TINRUSH             0b11111111  // 8 MSBs of inrush time, for which the stall detection will not trigger.
+#define DRV8214_CONFIG3_IMODE               0b11000000  // Determine the behavior of current regulation (0b10 by default).
+#define DRV8214_CONFIG3_SMODE               0b00100000  // Program the device response to a stall condition (set by default).
+#define DRV8214_CONFIG3_INT_VREF            0b00010000  // Fix internal reference voltage to 0.5 V internally when set, voltage is not fixed internally otherwise.
+#define DRV8214_CONFIG3_TBLANK              0b00001000  // Set current sense blanking time (1.8 μs by default, 1.0 μs when set).
+#define DRV8214_CONFIG3_TDEG                0b00000100  // Set the current regulation and stall detection deglitch time (2 μs by default, 1 μs when set).
+#define DRV8214_CONFIG3_OCP_MODE            0b00000010  // Program the device response to an overcurrent event (device perform auto-retry by default, device is latched off when set).
+#define DRV8214_CONFIG3_TSD_MODE            0b00000001  // Program device response to an over-temperature event (device perform auto-retry by default, device is latched off when set).
+#define DRV8214_CONFIG4_RC_REP              0b11000000  // Determines whether nFAULT is pulled low when RC_CNT exceeds threshold, and the behavior of RC_CNT when it reaches maximum value of 65535.
+#define DRV8214_CONFIG4_STALL_REP           0b00100000  // Determines whether stall is reported on the nFAULT pin. When set, nFAULT is low whenever stall is detected. When reset, stall is not reported on nFAULT output (set by default).
+#define DRV8214_CONFIG4_CBC_REP             0b00010000  // In cycle-by-cycle current regulation mode, when set, nFAULT is pulled low when H-Bridge enter internal current regulation, and is not otherwise (set by default).
+#define DRV8214_CONFIG4_PMODE               0b00001000  // Change between phase / enable mode (PH/EN) when reset or PWM mode when set (set by default).
+#define DRV8214_CONFIG4_I2C_BC              0b00000100  // Bridge control is confgured by INx pins when reset or by I2C bits in I2C_EN_IN1 and I2C_PH_IN2 when set.
+#define DRV8214_CONFIG4_I2C_BC_MODE         0b00000011  // PH / EN or PWM input bits for internal bridge control when I2C_BC is set, ignored if I2C_BC is reset.
 
 // Configuration options shifts
 

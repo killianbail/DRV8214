@@ -14,6 +14,7 @@ extern "C" {
 
 #include <stdbool.h>
 #include <stm32wb5mxx.h>
+#include <stm32wbxx_hal.h>
 #include "pca9546a.h"
 
 /**

@@ -5,8 +5,8 @@
  * @brief DRV8214 library.
  */
 
-#ifndef DRV8214_STATUS_H
-#define DRV8214_STATUS_H
+#ifndef DRV8214_H
+#define DRV8214_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,4 +30,4 @@ extern "C" {
 }
 #endif
 
-#endif // DRV8214_STATUS_H
+#endif // DRV8214_H

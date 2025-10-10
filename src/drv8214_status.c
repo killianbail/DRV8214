@@ -7,6 +7,8 @@
 
 // Includes
 
+
+#include <math.h>
 #include "drv8214_status.h"
 #include "drv8214_control.h"
 #include "drv8214_regedit.h"
@@ -48,6 +50,7 @@ float drv8214_get_speed(Drv8214 *driver) {
         case DRV8214_W_SCALE_32:    return SPEED * 32.0f;
         case DRV8214_W_SCALE_64:    return SPEED * 64.0f;
         case DRV8214_W_SCALE_128:   return SPEED * 128.0f;
+        default:                    return NAN;
     }
 }
 
@@ -72,6 +75,7 @@ float drv8214_get_motor_current(Drv8214 *driver) {
         case DRV8214_500_MA_MAX_1125_UA_PER_A:  return CURRENT_RAW_VALUE * AMPERE_PER_LSB(0.5f);
         case DRV8214_250_MA_MAX_5560_UA_PER_A:  return CURRENT_RAW_VALUE * AMPERE_PER_LSB(0.25f);
         case DRV8214_125_MA_MAX_5560_UA_PER_A:  return CURRENT_RAW_VALUE * AMPERE_PER_LSB(0.125f);
+        default:                                return NAN;
     }
 }
 

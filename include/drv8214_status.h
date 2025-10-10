@@ -28,24 +28,24 @@ extern "C" {
 
 // Bit masks for status registers
 
-#define DRV8214_FAULT_FAULT             0b1000'0000                     // FAULT bit, set when a fault occurred.
-#define DRV8214_FAULT_STALL             0b0010'0000                     // STALL bit, indicate motor stall.
-#define DRV8214_FAULT_OCP               0b0001'0000                     // OCP bit, set if over-current protection was triggered.
-#define DRV8214_FAULT_OVP               0b0000'1000                     // OVP bit, set if over-voltage protection was triggered.
-#define DRV8214_FAULT_TSD               0b0000'0100                     // TSD bit, set if thermal shut down was triggered.
-#define DRV8214_FAULT_NPOR              0b0000'0010                     // NPOR bit, set after a power on reset.
-#define DRV8214_FAULT_CNT_DONE          0b0000'0001                     // CNT_DONE bit, set when RC_CNT exceeds the ripple counting threshold.
-#define DRV8214_RC_STATUS1_SPEED        0b1111'1111                     // Motor speed estimated by the ripple counting algorithm.
-#define DRV8214_RC_STATUS2_CNT_LOW      0b1111'1111                     // 8 LSBs of the 16 bits of the ripple counter.
-#define DRV8214_RC_STATUS3_CNT_HIGH     0b1111'1111                     // 8 MSBs of the 16 bits of the ripple counter.
-#define DRV8214_REG_STATUS1_VMTR        0b1111'1111                     // Voltage across the motor terminals, with 0x00 -> 0 V and 0xB0 -> 11 V, or 62.5 mV / LSB.
-#define DRV8214_REG_STATUS2_IMTR        0b1111'1111                     // Current flowing through the motor, with 0x00 -> 0 A and 0xC0 -> CS_GAIN_SEL bits.
-#define DRV8214_REG_STATUS3_IN_DUTY     0b0011'1111                     // When speed or voltage regulation activated, show duty cycle with 0b00'0000 -> 0 % and 0b11'1111 -> 100 %. When regulation is disabled, is set to 0b00'0001 and duty cycle is shown in EXT_DUTY.
+#define DRV8214_FAULT_FAULT             0b10000000                      // FAULT bit, set when a fault occurred.
+#define DRV8214_FAULT_STALL             0b00100000                      // STALL bit, indicate motor stall.
+#define DRV8214_FAULT_OCP               0b00010000                      // OCP bit, set if over-current protection was triggered.
+#define DRV8214_FAULT_OVP               0b00001000                      // OVP bit, set if over-voltage protection was triggered.
+#define DRV8214_FAULT_TSD               0b00000100                      // TSD bit, set if thermal shut down was triggered.
+#define DRV8214_FAULT_NPOR              0b00000010                      // NPOR bit, set after a power on reset.
+#define DRV8214_FAULT_CNT_DONE          0b00000001                      // CNT_DONE bit, set when RC_CNT exceeds the ripple counting threshold.
+#define DRV8214_RC_STATUS1_SPEED        0b11111111                      // Motor speed estimated by the ripple counting algorithm.
+#define DRV8214_RC_STATUS2_CNT_LOW      0b11111111                      // 8 LSBs of the 16 bits of the ripple counter.
+#define DRV8214_RC_STATUS3_CNT_HIGH     0b11111111                      // 8 MSBs of the 16 bits of the ripple counter.
+#define DRV8214_REG_STATUS1_VMTR        0b11111111                      // Voltage across the motor terminals, with 0x00 -> 0 V and 0xB0 -> 11 V, or 62.5 mV / LSB.
+#define DRV8214_REG_STATUS2_IMTR        0b11111111                      // Current flowing through the motor, with 0x00 -> 0 A and 0xC0 -> CS_GAIN_SEL bits.
+#define DRV8214_REG_STATUS3_IN_DUTY     0b00111111                      // When speed or voltage regulation activated, show duty cycle with 0b00'0000 -> 0 % and 0b11'1111 -> 100 %. When regulation is disabled, is set to 0b00'0001 and duty cycle is shown in EXT_DUTY.
 
 // Status conversion constants
 
 #define DRV8214_VMTR_VOLTS_PER_LSB      (11.0f / ((float)0xB0))         // 0x00 -> 0 V and 0xB0 -> 11 V, or 62.5 mV / LSB.
-#define DRV8214_IN_DUTY_PERCENT_PER_LSB (100.0f / ((float)0b0011'1111)) // 0b00'0000 -> 0 % and 0b11'1111 -> 100 %.
+#define DRV8214_IN_DUTY_PERCENT_PER_LSB (100.0f / ((float)0b00111111))  // 0b000000 -> 0 % and 0b111111 -> 100 %.
 #define AMPERE_PER_LSB(max)             (max / ((float)0xC0))           // 0x00 -> 0 A and 0xC0 -> CS_GAIN_SEL associated max current
 
 // Getters

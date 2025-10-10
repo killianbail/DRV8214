@@ -33,34 +33,34 @@ extern "C" {
 
 // Bit masks for control registers
 
-#define DRV8214_REG_CTRL0_EN_SS             0b0010'0000 // Soft start / stop when set, disable it otherwise (set by default).
-#define DRV8214_REG_CTRL0_REG_CTRL          0b0001'1000 // Current regulation scheme.
-#define DRV8214_REG_CTRL0_PWM_FREQ          0b0000'0100 // PWM frequency is 25 kHz when set and 50 kHz when reset (set by default).
-#define DRV8214_REG_CTRL0_W_SCALE           0b0000'0011 // Speed scaling factor used for target ripple speed.
-#define DRV8214_REG_CTRL1_WSET_VSET         0b1111'1111 // Target motor voltage or ripple speed.
-#define DRV8214_REG_CTRL2_OUT_FLT           0b1100'0000 // Program the cut-off frequency of the output voltage low-pass filter.
-#define DRV8214_REG_CTRL2_EXT_DUTY          0b0011'1111 // Manual duty cycle when external bridge control is disabled and duty control is enabled.
-#define DRV8214_RC_CTRL0_EN_RC              0b1000'0000 // Enable ripple counting when set, disable it otherwise (set by default).
-#define DRV8214_RC_CTRL0_DIS_EC             0b0100'0000 // Disable error correction when set, enable it otherwise.
-#define DRV8214_RC_CTRL0_RC_HIZ             0b0010'0000 // Disable bridge when ripple count exceed threshold when set, keep it enabled otherwise.
-#define DRV8214_RC_CTRL0_FLT_GAIN_SEL       0b0001'1000 // Filter input scaling factor for current ripple detection.
-#define DRV8214_RC_CTRL0_CS_GAIN_SEL        0b0000'0111 // Current mirror gain
-#define DRV8214_RC_CTRL1_RC_THR             0b1111'1111 // 8 LSBs of the ripple counter threshold value.
-#define DRV8214_RC_CTRL2_INV_R_SCALE        0b1100'0000 // Scaling factor of the inverse motor resistance.
-#define DRV8214_RC_CTRL2_KMC_SCALE          0b0011'0000 // Scaling factor of the motor constant.
-#define DRV8214_RC_CTRL2_RC_THR_SCALE       0b0000'1100 // Scaling factor of the ripple counter threshold value.
-#define DRV8214_RC_CTRL2_RC_THR             0b0000'0011 // 2 MSBs of the ripple counter threshold value.
-#define DRV8214_RC_CTRL3_INV_R              0b1111'1111 // Inverse resistance of the motor coil scaled (must not be set to 0).
-#define DRV8214_RC_CTRL4_KMC                0b1111'1111 // Motor constant scaled.
-#define DRV8214_RC_CTRL5_FLT_K              0b1111'0000 // Bandpass filter inverse quality factor, set its bandwidth.
-#define DRV8214_RC_CTRL6_EC_PULSE_DIS       0b1000'0000 // Disable error correction pulses when set, does not otherwise.
-#define DRV8214_RC_CTRL6_T_MECH_FLT         0b0111'0000 // Determine the cut-off frequency of the low-pass filter at the output of the ripple counter. Decreasing this value gives a faster response.
-#define DRV8214_RC_CTRL6_EC_FALSE_PER       0b0000'1100 // Window during which the error corrector classifies a current ripple as an extra ripple.
-#define DRV8214_RC_CTRL6_EC_MISS_PER        0b0000'0011 // Window during which the error corrector adds a missed ripple.
-#define DRV8214_RC_CTRL7_KP_DIV             0b1110'0000 // Denominator of the proportional gain of the regulator.
-#define DRV8214_RC_CTRL7_KP                 0b0001'1111 // Numerator of the proportional gain of the regulator.
-#define DRV8214_RC_CTRL8_KI_DIV             0b1110'0000 // Denominator of the integral gain of the regulator.
-#define DRV8214_RC_CTRL8_KI                 0b0001'1111 // Numerator of the integral gain of the regulator.
+#define DRV8214_REG_CTRL0_EN_SS             0b00100000  // Soft start / stop when set, disable it otherwise (set by default).
+#define DRV8214_REG_CTRL0_REG_CTRL          0b00011000  // Current regulation scheme.
+#define DRV8214_REG_CTRL0_PWM_FREQ          0b00000100  // PWM frequency is 25 kHz when set and 50 kHz when reset (set by default).
+#define DRV8214_REG_CTRL0_W_SCALE           0b00000011  // Speed scaling factor used for target ripple speed.
+#define DRV8214_REG_CTRL1_WSET_VSET         0b11111111  // Target motor voltage or ripple speed.
+#define DRV8214_REG_CTRL2_OUT_FLT           0b11000000  // Program the cut-off frequency of the output voltage low-pass filter.
+#define DRV8214_REG_CTRL2_EXT_DUTY          0b00111111  // Manual duty cycle when external bridge control is disabled and duty control is enabled.
+#define DRV8214_RC_CTRL0_EN_RC              0b10000000  // Enable ripple counting when set, disable it otherwise (set by default).
+#define DRV8214_RC_CTRL0_DIS_EC             0b01000000  // Disable error correction when set, enable it otherwise.
+#define DRV8214_RC_CTRL0_RC_HIZ             0b00100000  // Disable bridge when ripple count exceed threshold when set, keep it enabled otherwise.
+#define DRV8214_RC_CTRL0_FLT_GAIN_SEL       0b00011000  // Filter input scaling factor for current ripple detection.
+#define DRV8214_RC_CTRL0_CS_GAIN_SEL        0b00000111  // Current mirror gain
+#define DRV8214_RC_CTRL1_RC_THR             0b11111111  // 8 LSBs of the ripple counter threshold value.
+#define DRV8214_RC_CTRL2_INV_R_SCALE        0b11000000  // Scaling factor of the inverse motor resistance.
+#define DRV8214_RC_CTRL2_KMC_SCALE          0b00110000  // Scaling factor of the motor constant.
+#define DRV8214_RC_CTRL2_RC_THR_SCALE       0b00001100  // Scaling factor of the ripple counter threshold value.
+#define DRV8214_RC_CTRL2_RC_THR             0b00000011  // 2 MSBs of the ripple counter threshold value.
+#define DRV8214_RC_CTRL3_INV_R              0b11111111  // Inverse resistance of the motor coil scaled (must not be set to 0).
+#define DRV8214_RC_CTRL4_KMC                0b11111111  // Motor constant scaled.
+#define DRV8214_RC_CTRL5_FLT_K              0b11110000  // Bandpass filter inverse quality factor, set its bandwidth.
+#define DRV8214_RC_CTRL6_EC_PULSE_DIS       0b10000000  // Disable error correction pulses when set, does not otherwise.
+#define DRV8214_RC_CTRL6_T_MECH_FLT         0b01110000  // Determine the cut-off frequency of the low-pass filter at the output of the ripple counter. Decreasing this value gives a faster response.
+#define DRV8214_RC_CTRL6_EC_FALSE_PER       0b00001100  // Window during which the error corrector classifies a current ripple as an extra ripple.
+#define DRV8214_RC_CTRL6_EC_MISS_PER        0b00000011  // Window during which the error corrector adds a missed ripple.
+#define DRV8214_RC_CTRL7_KP_DIV             0b11100000  // Denominator of the proportional gain of the regulator.
+#define DRV8214_RC_CTRL7_KP                 0b00011111  // Numerator of the proportional gain of the regulator.
+#define DRV8214_RC_CTRL8_KI_DIV             0b11100000  // Denominator of the integral gain of the regulator.
+#define DRV8214_RC_CTRL8_KI                 0b00011111  // Numerator of the integral gain of the regulator.
 
 // Control options shifts
 
@@ -79,7 +79,7 @@ extern "C" {
 
 // Control conversion constants
 
-#define DRV8214_EXT_DUTY_PERCENT_PER_LSB    (100.0f / ((float)0b0011'1111)) // 0b00'0000 -> 0 % and 0b11'1111 -> 100 %.
+#define DRV8214_EXT_DUTY_PERCENT_PER_LSB    (100.0f / ((float)0b00111111))  // 0b000000 -> 0 % and 0b111111 -> 100 %.
 
 // Control options enumerations
 

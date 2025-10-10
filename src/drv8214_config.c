@@ -154,8 +154,8 @@ void drv8214_set_inrush_duration(Drv8214 *driver, float duration) {
     if(drv8214_is_soft_start_stop_enabled(driver))
         scale = (float)drv8214_masked_read(driver, DRV8214_REG_CTRL1, DRV8214_REG_CTRL1_WSET_VSET);
     const uint16_t INRUSH_VALUE = (uint16_t)((duration - DRV8214_TINRUSH_MIN_S) / (scale * DRV8214_TINRUSH_S_PER_LSB));
-    drv8214_write(driver, DRV8214_CONFIG1, (uint8_t)(INRUSH_VALUE & DRV8214_CONFIG1_TINRUSH));
-    drv8214_write(driver, DRV8214_CONFIG1, (uint8_t)((INRUSH_VALUE >> 8) & DRV8214_CONFIG2_TINRUSH));
+    drv8214_masked_write(driver, DRV8214_CONFIG1, DRV8214_CONFIG1_TINRUSH, (uint8_t)(INRUSH_VALUE >> 0)); // Crashes here
+    drv8214_masked_write(driver, DRV8214_CONFIG2, DRV8214_CONFIG2_TINRUSH, (uint8_t)(INRUSH_VALUE >> 8));
 }
 
 void drv8214_set_current_regulation_behavior(Drv8214 *driver, Drv8214CurrentRegBehavior currentRegBehavior) {
