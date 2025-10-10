@@ -55,84 +55,84 @@ extern "C" {
  * @param driver Handle to the driver structure.
  * @return True if the fault bit is set, false otherwise.
  */
-bool drv8214_status_is_fault_set(Drv8214 *driver);
+bool drv8214_is_fault_set(Drv8214 *driver);
 
 /**
  * @brief Read the stall bit of the fault status register.
  * @param driver Handle to the driver structure.
  * @return True if the stall bit is set, false otherwise.
  */
-bool drv8214_status_is_stall_set(Drv8214 *driver);
+bool drv8214_is_stall_set(Drv8214 *driver);
 
 /**
  * @brief Read the OCP bit of the fault status register.
  * @param driver Handle to the driver structure.
  * @return True if over-current protection was triggered, false otherwise.
  */
-bool drv8214_status_is_overcurrent_potection_set(Drv8214 *driver);
+bool drv8214_is_overcurrent_potection_set(Drv8214 *driver);
 
 /**
  * @brief Read the OVP bit of the fault status register.
  * @param driver Handle to the driver structure.
  * @return True if over-voltage protection was triggered, false otherwise.
  */
-bool drv8214_status_is_overvoltage_protection_set(Drv8214 *driver);
+bool drv8214_is_overvoltage_protection_set(Drv8214 *driver);
 
 /**
  * @brief Read the TSD bit of the fault status register.
  * @param driver Handle to the driver structure.
  * @return True if thermal shut down protection was triggered, false otherwise.
  */
-bool drv8214_status_is_thermal_shutdown_set(Drv8214 *driver);
+bool drv8214_is_thermal_shutdown_set(Drv8214 *driver);
 
 /**
  * @brief Read the NPOR bit of the fault status register.
  * @param driver Handle to the driver structure.
  * @return True if power on reset occurred, false otherwise.
  */
-bool drv8214_status_is_power_on_reset_set(Drv8214 *driver);
+bool drv8214_is_power_on_reset_set(Drv8214 *driver);
 
 /**
  * @brief Read the CNT_DONE bit of the fault status register.
  * @param driver Handle to the driver structure.
  * @return True if the ripple counter reached the threshold, false otherwise.
  */
-bool drv8214_status_is_count_done_set(Drv8214 *driver);
+bool drv8214_is_count_done_set(Drv8214 *driver);
 
 /**
  * @brief Read the motor speed estimated by the ripple counting algorithm.
  * @param driver Handle to the driver structure.
  * @return Motor speed in radians per seconds.
  */
-float drv8214_status_get_speed(Drv8214 *driver);
+float drv8214_get_speed(Drv8214 *driver);
 
 /**
  * @brief Read the ripple counter.
  * @param driver Handle to the driver structure.
  * @return Ripple count.
  */
-uint16_t drv8214_status_get_ripple_count(Drv8214 *driver);
+uint16_t drv8214_get_ripple_count(Drv8214 *driver);
 
 /**
  * @brief Read the voltage across motor terminals.
  * @param driver Handle to the driver structure.
  * @return Voltage in volts.
  */
-float drv8214_status_get_motor_voltage(Drv8214 *driver);
+float drv8214_get_motor_voltage(Drv8214 *driver);
 
 /**
  * @brief Read the current flowing through the motor.
  * @param driver Handle to the driver structure.
  * @return Current in amperes.
  */
-float drv8214_status_get_motor_current(Drv8214 *driver);
+float drv8214_get_motor_current(Drv8214 *driver);
 
 /**
  * @brief Read the duty cycle applied by the built-in speed or voltage regulation.
  * @param driver Handle to the driver structure.
  * @return Duty cycle in percents if speed of voltage regulation is activated, or a placeholder value (~1.59 %) otherwise.
  */
-float drv8214_status_get_auto_duty_cycle(Drv8214 *driver);
+float drv8214_get_auto_duty_cycle(Drv8214 *driver);
 
 #ifdef __cplusplus
 }
