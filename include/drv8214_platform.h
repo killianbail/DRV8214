@@ -14,6 +14,7 @@ extern "C" {
 
 #include <stdbool.h>
 #include <stm32wb5mxx.h>
+#include "pca9546a.h"
 
 /**
  * @brief Driver structure, can be customized as needed. This structure is only passed
@@ -21,8 +22,10 @@ extern "C" {
  * passed through the intermediate functions.
  */
 typedef struct Drv8214 {
+    I2C_HandleTypeDef *hi2c;
     uint8_t address;
-    uint8_t channel;
+    Pca9546a *mux;
+    uint8_t muxChannel;
     GPIO_TypeDef *faultPort;
     uint16_t faultPin;
 } Drv8214;
