@@ -18,17 +18,27 @@ extern "C" {
 #include "pca9546a.h"
 
 /**
- * @brief Driver structure, can be customized as needed. This structure is only passed
- * as a handle until it reaches the two functions below, no field is touched while it is
- * passed through the intermediate functions.
+ * @brief Driver structure, fields can be customized as needed.
  */
 typedef struct Drv8214 {
+
+    // I2C interface
+
     I2C_HandleTypeDef *hi2c;
     uint8_t address;
     Pca9546a *mux;
     uint8_t muxChannel;
+
+    // Fault pin GPIO
+
     GPIO_TypeDef *faultPort;
     uint16_t faultPin;
+
+    // Application state
+
+    bool invertedPolarity;
+    int64_t rippleCount;
+
 } Drv8214;
 
 /**
