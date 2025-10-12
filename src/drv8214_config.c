@@ -7,6 +7,7 @@
 
 // Includes
 
+#include <math.h>
 #include "drv8214_config.h"
 #include "drv8214_control.h"
 #include "drv8214_regedit.h"
@@ -38,13 +39,20 @@ bool drv8214_is_manual_pwm_enabled(Drv8214 *driver) {
 }
 
 float drv8214_get_inrush_duration(Drv8214 *driver) {
-    uint16_t inrushValue = 0;
-    inrushValue |= drv8214_masked_read(driver, DRV8214_CONFIG1, DRV8214_CONFIG1_TINRUSH);
-    inrushValue |= drv8214_masked_read(driver, DRV8214_CONFIG2, DRV8214_CONFIG2_TINRUSH) << 8;
-    float scale = 1.0f;
-    if(drv8214_is_soft_start_stop_enabled(driver))
-        scale = (float)drv8214_masked_read(driver, DRV8214_REG_CTRL1, DRV8214_REG_CTRL1_WSET_VSET);
-    return DRV8214_TINRUSH_MIN_S + ((float)inrushValue) * scale * DRV8214_TINRUSH_S_PER_LSB;
+
+    // Read inrush value
+    uint16_t inrush = 0;
+    inrush |= drv8214_masked_read(driver, DRV8214_CONFIG1, DRV8214_CONFIG1_TINRUSH);
+    inrush |= drv8214_masked_read(driver, DRV8214_CONFIG2, DRV8214_CONFIG2_TINRUSH) << 8;
+
+    // First case, soft start / stop disabled, inrush time goes from 0x0000 -> 5 ms to 0xFFFF -> 6.7 ms.
+    if(!drv8214_is_soft_start_stop_enabled(driver))
+        return ((float)inrush) * DRV8214_TINRUSH_NO_SS_RESOLUTION + DRV8214_TINRUSH_NO_SS_MIN;
+    
+    // Second case, soft start / stop enabled, inrush time is badly defined between datasheet and TI forums
+    else {
+        return NAN;
+    }
 }
 
 Drv8214CurrentRegBehavior drv8214_get_current_regulation_behavior(Drv8214 *driver) {
@@ -146,15 +154,26 @@ void drv8214_set_manual_pwm_enabled(Drv8214 *driver, bool state) {
 }
 
 void drv8214_set_inrush_duration(Drv8214 *driver, float duration) {
-    if(duration < DRV8214_TINRUSH_MIN_S)
-        duration = DRV8214_TINRUSH_MIN_S;
-    if(duration > DRV8214_TINRUSH_MAX_S)
-        duration = DRV8214_TINRUSH_MAX_S;
-    if(drv8214_is_soft_start_stop_enabled(driver))
-        duration /= (float)drv8214_masked_read(driver, DRV8214_REG_CTRL1, DRV8214_REG_CTRL1_WSET_VSET);
-    const uint16_t INRUSH_VALUE = (uint16_t)((duration - DRV8214_TINRUSH_MIN_S) / DRV8214_TINRUSH_S_PER_LSB);
-    drv8214_masked_write(driver, DRV8214_CONFIG1, DRV8214_CONFIG1_TINRUSH, (uint8_t)(INRUSH_VALUE >> 0));
-    drv8214_masked_write(driver, DRV8214_CONFIG2, DRV8214_CONFIG2_TINRUSH, (uint8_t)(INRUSH_VALUE >> 8));
+
+    uint16_t inrush;
+
+    // First case, soft start / stop disabled, inrush time goes from 0x0000 -> 5 ms to 0xFFFF -> 6.7 ms.
+    if(!drv8214_is_soft_start_stop_enabled(driver)) {
+        if(duration < DRV8214_TINRUSH_NO_SS_MIN)
+            duration = DRV8214_TINRUSH_NO_SS_MIN;
+        if(duration > DRV8214_TINRUSH_NO_SS_MAX)
+            duration = DRV8214_TINRUSH_NO_SS_MAX;
+        inrush = (uint16_t)((duration - DRV8214_TINRUSH_NO_SS_MIN) / DRV8214_TINRUSH_NO_SS_RESOLUTION);
+    }
+    
+    // Second case, soft start / stop enabled, inrush time is badly defined between datasheet and TI forums
+    else {
+        inrush = 0x8000;
+    }
+    
+    // Write inrush value
+    drv8214_masked_write(driver, DRV8214_CONFIG1, DRV8214_CONFIG1_TINRUSH, (uint8_t)(inrush >> 0));
+    drv8214_masked_write(driver, DRV8214_CONFIG2, DRV8214_CONFIG2_TINRUSH, (uint8_t)(inrush >> 8));
 }
 
 void drv8214_set_current_regulation_behavior(Drv8214 *driver, Drv8214CurrentRegBehavior currentRegBehavior) {

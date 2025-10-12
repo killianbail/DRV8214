@@ -66,9 +66,9 @@ extern "C" {
 
 // Configuration conversion constants
 
-#define DRV8214_TINRUSH_MIN_S               0.005f  // Inrush time is at least 5 ms when TINRUSH = 0x0000.
-#define DRV8214_TINRUSH_MAX_S               6.7f    // Inrush time is at most 6.7 s when TINRUSH = 0xFFFF.
-#define DRV8214_TINRUSH_S_PER_LSB           ((DRV8214_TINRUSH_MAX_S - DRV8214_TINRUSH_MIN_S) / ((float)UINT16_MAX)) // When EN_SS is reset, Inrush time goes from 5 ms when TINRUSH = 0x0000 to 6.7 s when TINRUSH = 0xFFFF. When EN_SS is set, inrush time will be multiplied by a factor of WSET_VSET.
+#define DRV8214_TINRUSH_NO_SS_MIN           0.005f      // When soft start / stop is disabled, inrush time is at least 5 ms when TINRUSH = 0x0000.
+#define DRV8214_TINRUSH_NO_SS_MAX           6.7f        // When soft start / stop is disabled, inrush time is at most 6.7 s when TINRUSH = 0xFFFF.
+#define DRV8214_TINRUSH_NO_SS_RESOLUTION    ((DRV8214_TINRUSH_NO_SS_MAX - DRV8214_TINRUSH_NO_SS_MIN) / ((float)UINT16_MAX)) // When EN_SS is reset, Inrush time goes from 5 ms when TINRUSH = 0x0000 to 6.7 s when TINRUSH = 0xFFFF. When EN_SS is set, inrush time will be multiplied by a factor of WSET_VSET.
 
 // Configuration options enumerations
 
@@ -153,7 +153,14 @@ bool drv8214_is_stall_enabled(Drv8214 *driver);
 Drv8214FilterType drv8214_get_filter_type(Drv8214 *driver);
 Drv8214RegulationVoltageRange drv8214_get_regulation_range(Drv8214 *driver);
 bool drv8214_is_manual_pwm_enabled(Drv8214 *driver);
+
+/**
+ * @note Only work with stop start disabled. Implementation with the formulas in the datasheet doesn't work,
+ * neither does the fix provided on the following forum :
+ * https://e2e.ti.com/support/motor-drivers-group/motor-drivers/f/motor-drivers-forum/1516362/drv8214evm-target-voltage-and-soft-start-ss-questions 
+ */
 float drv8214_get_inrush_duration(Drv8214 *driver);
+
 Drv8214CurrentRegBehavior drv8214_get_current_regulation_behavior(Drv8214 *driver);
 Drv8214StallBehavour drv8214_get_stall_behaviour(Drv8214 *driver);
 Drv8214FixRefVoltage drv8214_get_internal_ref_voltage(Drv8214 *driver);
@@ -229,7 +236,9 @@ void drv8214_set_manual_pwm_enabled(Drv8214 *driver, bool state);
  * @brief Set the inrush duration for which stall detection is ignored.
  * @param driver Handle to the driver structure.
  * @param duration Duration in seconds.
- * @note Must be set after soft start / stop and voltage or speed target. Duration computation is dependant on these registers.
+ * @note Only work with stop start disabled. Implementation with the formulas in the datasheet doesn't work,
+ * neither does the fix provided on the following forum :
+ * https://e2e.ti.com/support/motor-drivers-group/motor-drivers/f/motor-drivers-forum/1516362/drv8214evm-target-voltage-and-soft-start-ss-questions 
  */
 void drv8214_set_inrush_duration(Drv8214 *driver, float duration);
 
