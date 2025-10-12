@@ -1,13 +1,12 @@
-/*
- * Copyright (c) 2025 Théo Heng
- *
- * This file is part of the drv8214_multiplatform library.
- *
- * Licensed under the MIT License. See the LICENSE file in the project root for full license information.
+/**
+ * @file drv8214_regedit.h
+ * @author Killian Baillifard
+ * @date 12.10.2025
+ * @brief Driver register edit functions. Use the platform functions from drv8214_platform.c file under the hood.
  */
 
-#ifndef DRV8214_I2C_H
-#define DRV8214_I2C_H
+#ifndef DRV8214_REGEDIT_H
+#define DRV8214_REGEDIT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,4 +54,4 @@ void drv8214_masked_write(Drv8214 *driver, uint8_t reg, uint8_t mask, uint8_t va
 }
 #endif
 
-#endif // DRV8214_I2C_H
+#endif // DRV8214_REGEDIT_H

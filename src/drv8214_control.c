@@ -205,10 +205,46 @@ void drv8214_set_current_mirror_gain(Drv8214 *driver, Drv8214CsGainSel csGainSel
     drv8214_masked_write(driver, DRV8214_RC_CTRL0, DRV8214_RC_CTRL0_CS_GAIN_SEL, csGainSel);
 }
 
-void drv8214_set_ripple_counter_threshold(Drv8214 *driver, uint16_t threshold, Drv8214RippleCounterThresholdScale scale) {
-    drv8214_masked_write(driver, DRV8214_RC_CTRL1, DRV8214_RC_CTRL1_RC_THR, threshold & 0x00FF);
-    drv8214_masked_write(driver, DRV8214_RC_CTRL2, DRV8214_RC_CTRL2_RC_THR, (threshold & 0xFF00) >> 8);
-    drv8214_masked_write(driver, DRV8214_RC_CTRL2, DRV8214_RC_CTRL2_RC_THR_SCALE, scale << DRV8214_RC_CTRL2_RC_THR_SCALE_SHIFT);
+uint16_t drv8214_set_ripple_counter_threshold(Drv8214 *driver, uint16_t target, Drv8214RippleCounterThresholdScale *scale) {
+
+    // Allocate local variables
+    Drv8214RippleCounterThresholdScale thresholdScale = DRV8214_RC_THR_SCALE_2;
+    uint8_t thresholdShift = 1;
+    bool ceil = false;
+
+    // Find closest applicable threshold
+    if(target <= 0b0000011111111111) {
+        thresholdScale = DRV8214_RC_THR_SCALE_2;
+        thresholdShift = 1;
+        ceil = (target & 0b1) >= 0b1 ? true : false;
+    } else if(target <= 0b0001111111111111) {
+        thresholdScale = DRV8214_RC_THR_SCALE_8;
+        thresholdShift = 3;
+        ceil = (target & 0b111) >= 0b100 ? true : false;
+    } else if(target <= 0b0011111111111111) {
+        thresholdScale = DRV8214_RC_THR_SCALE_16;
+        thresholdShift = 4;
+        ceil = (target & 0b1111) >= 0b1000 ? true : false;
+    } else {
+        thresholdScale = DRV8214_RC_THR_SCALE_64;
+        thresholdShift = 6;
+        ceil = (target & 0b111111) >= 0b100000 ? true : false;
+    }
+
+    // Shift and round threshold to closest value
+    uint16_t shiftedThreshold = target >> thresholdShift;
+    if((shiftedThreshold < 0b1111111111) && ceil)
+        ++shiftedThreshold;
+
+    // Apply threshold and scale
+    drv8214_masked_write(driver, DRV8214_RC_CTRL1, DRV8214_RC_CTRL1_RC_THR, shiftedThreshold & 0x00FF);
+    drv8214_masked_write(driver, DRV8214_RC_CTRL2, DRV8214_RC_CTRL2_RC_THR, (shiftedThreshold & 0xFF00) >> 8);
+    drv8214_masked_write(driver, DRV8214_RC_CTRL2, DRV8214_RC_CTRL2_RC_THR_SCALE, thresholdScale << DRV8214_RC_CTRL2_RC_THR_SCALE_SHIFT);
+    
+    // Return actual threshold and optionally scale value
+    if(scale != NULL)
+        *scale = thresholdScale;
+    return shiftedThreshold << thresholdShift;
 }
 
 void drv8214_set_motor_resistance(Drv8214 *driver, uint8_t inverseResistance, Drv8214InverseMotorResistanceScale scale) {
@@ -243,7 +279,7 @@ void drv8214_set_error_correction_miss_window(Drv8214 *driver, Drv8214ErrorCorre
     drv8214_masked_write(driver, DRV8214_RC_CTRL6, DRV8214_RC_CTRL6_EC_MISS_PER, window);
 }
 
-void drv8214_set_pi_coefficients(Drv8214 *driver, uint8_t kpNum, uint8_t kpDen, uint8_t kiNum, uint8_t kiDen) {
+void drv8214_set_pi_coefficients(Drv8214 *driver, uint8_t kpNum, Drv8214KDiv kpDen, uint8_t kiNum, Drv8214KDiv kiDen) {
     drv8214_masked_write(driver, DRV8214_RC_CTRL7, DRV8214_RC_CTRL7_KP, kpNum);
     drv8214_masked_write(driver, DRV8214_RC_CTRL7, DRV8214_RC_CTRL7_KP_DIV, kpDen << DRV8214_RC_CTRL7_KP_DIV_SHIFT);
     drv8214_masked_write(driver, DRV8214_RC_CTRL8, DRV8214_RC_CTRL8_KI, kiNum);

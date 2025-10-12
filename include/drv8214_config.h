@@ -68,7 +68,7 @@ extern "C" {
 
 #define DRV8214_TINRUSH_MIN_S               0.005f  // Inrush time is at least 5 ms when TINRUSH = 0x0000.
 #define DRV8214_TINRUSH_MAX_S               6.7f    // Inrush time is at most 6.7 s when TINRUSH = 0xFFFF.
-#define DRV8214_TINRUSH_S_PER_LSB           (DRV8214_TINRUSH_MAX_S / ((float)UINT16_MAX)) // When EN_SS is reset, Inrush time goes from 5 ms when TINRUSH = 0x0000 to 6.7 s when TINRUSH = 0xFFFF. When EN_SS is set, inrush time will be multiplied by a factor of WSET_VSET.
+#define DRV8214_TINRUSH_S_PER_LSB           ((DRV8214_TINRUSH_MAX_S - DRV8214_TINRUSH_MIN_S) / ((float)UINT16_MAX)) // When EN_SS is reset, Inrush time goes from 5 ms when TINRUSH = 0x0000 to 6.7 s when TINRUSH = 0xFFFF. When EN_SS is set, inrush time will be multiplied by a factor of WSET_VSET.
 
 // Configuration options enumerations
 
@@ -229,6 +229,7 @@ void drv8214_set_manual_pwm_enabled(Drv8214 *driver, bool state);
  * @brief Set the inrush duration for which stall detection is ignored.
  * @param driver Handle to the driver structure.
  * @param duration Duration in seconds.
+ * @note Must be set after soft start / stop and voltage or speed target. Duration computation is dependant on these registers.
  */
 void drv8214_set_inrush_duration(Drv8214 *driver, float duration);
 

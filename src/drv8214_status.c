@@ -7,13 +7,22 @@
 
 // Includes
 
-
 #include <math.h>
 #include "drv8214_status.h"
 #include "drv8214_control.h"
 #include "drv8214_regedit.h"
+#include "main.h"
+#include "gpio.h"
 
 // Definitions
+
+bool drv8214_is_fault_pin_active(Drv8214 *driver) {
+    return HAL_GPIO_ReadPin(driver->faultPort, driver->faultPin) == GPIO_PIN_RESET;
+}
+
+uint8_t drv8214_get_fault_flags(Drv8214 *driver) {
+    return drv8214_read(driver, DRV8214_FAULT);
+}
 
 bool drv8214_is_fault_set(Drv8214 *driver) {
     return drv8214_read_flags(driver, DRV8214_FAULT, DRV8214_FAULT_FAULT);

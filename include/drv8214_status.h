@@ -50,6 +50,15 @@ extern "C" {
 
 // Getters
 
+bool drv8214_is_fault_pin_active(Drv8214 *driver);
+
+/**
+ * @brief Read the whole fault register.
+ * @param driver Handle to the driver structure.
+ * @return Bit field of the fault register.
+ */
+uint8_t drv8214_get_fault_flags(Drv8214 *driver);
+
 /**
  * @brief Read the fault bit of the fault status register.
  * @param driver Handle to the driver structure.

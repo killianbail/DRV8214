@@ -2,7 +2,8 @@
  * @file drv8214.h
  * @author Killian Baillifard, Theo Heng.
  * @date 10.10.2025
- * @brief DRV8214 library.
+ * @brief DRV8214 library. High level API, splitted in status, config and control files according to the datashet.
+ * @copyright Copyright (c) 2025 Théo Heng, Licensed under the MIT License. See the LICENSE file in the project root for full license information.
  */
 
 #ifndef DRV8214_H
@@ -12,9 +13,14 @@
 extern "C" {
 #endif
 
+// Includes
+
 #include "drv8214_status.h"
 #include "drv8214_config.h"
 #include "drv8214_control.h"
+#include "drv8214_dump.h"
+
+// Definitions
 
 #define DRV8214_I2C_ADDR_00  0x30  // Address = 0x60 / 0x61 in 8-bit | A1 = 0, A0 = 0 
 #define DRV8214_I2C_ADDR_0Z  0x31  // Address = 0x62 / 0x63 in 8-bit | A1 = 0, A0 = Z

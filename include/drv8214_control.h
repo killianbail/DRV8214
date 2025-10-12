@@ -153,6 +153,16 @@ typedef enum Drv8214ErrorCorrectorWindow {
     DRV8214_EC_WINDOW_50_PERCENT = 0b11
 } Drv8214ErrorCorrectorWindow;
 
+typedef enum Drv8214KDiv {
+    DRV8214_K_DIV_32 = 0b000,
+    DRV8214_K_DIV_64 = 0b001,
+    DRV8214_K_DIV_128 = 0b010,
+    DRV8214_K_DIV_256 = 0b011,
+    DRV8214_K_DIV_512 = 0b100,
+    DRV8214_K_DIV_16 = 0b101,
+    DRV8214_K_DIV_1 = 0b110
+} Drv8214KDiv;
+
 // Getters
 
 bool drv8214_is_soft_start_stop_enabled(Drv8214 *driver);
@@ -193,7 +203,18 @@ void drv8214_set_error_correction_disabled(Drv8214 *driver, bool state);
 void drv8214_set_bridge_cutoff_on_threshold_enabled(Drv8214 *driver, bool state);
 void drv8214_set_filter_input_scaling(Drv8214 *driver, Drv8214FilterScale filterScale);
 void drv8214_set_current_mirror_gain(Drv8214 *driver, Drv8214CsGainSel csGainSel);
-void drv8214_set_ripple_counter_threshold(Drv8214 *driver, uint16_t threshold, Drv8214RippleCounterThresholdScale scale);
+
+/**
+ * @brief Set the ripple counter threshold as close as possible to the target threshold.
+ * The threshold value is given with 16 bits, but stored only with 10 bits of precision.
+ * Therefore target threshold is rounded up or down to the closest possible value before being set.
+ * @param driver Driver handle.
+ * @param target Target threshold.
+ * @param scale Optionnal return value, can be set to NULL. Division which have been applied to target threshold.
+ * @return Actual threshold
+ */
+uint16_t drv8214_set_ripple_counter_threshold(Drv8214 *driver, uint16_t target, Drv8214RippleCounterThresholdScale *scale);
+
 void drv8214_set_motor_resistance(Drv8214 *driver, uint8_t inverseResistance, Drv8214InverseMotorResistanceScale scale);
 void drv8214_set_motor_constant(Drv8214 *driver, uint8_t motorConstant, Drv8214MotorConstantScale scale);
 void drv8214_set_bandpass_quality(Drv8214 *driver, uint8_t quality);
@@ -201,7 +222,7 @@ void drv8214_set_error_correction_pulse_disabled(Drv8214 *driver, bool state);
 void drv8214_set_ripple_lowpass_cutoff(Drv8214 *driver, uint8_t value);
 void drv8214_set_error_correction_false_window(Drv8214 *driver, Drv8214ErrorCorrectorWindow window);
 void drv8214_set_error_correction_miss_window(Drv8214 *driver, Drv8214ErrorCorrectorWindow window);
-void drv8214_set_pi_coefficients(Drv8214 *driver, uint8_t kpNum, uint8_t kpDen, uint8_t kiNum, uint8_t kiDen);
+void drv8214_set_pi_coefficients(Drv8214 *driver, uint8_t kpNum, Drv8214KDiv kpDen, uint8_t kiNum, Drv8214KDiv kiDen);
 
 #ifdef __cplusplus
 }

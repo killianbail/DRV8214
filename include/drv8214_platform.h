@@ -2,7 +2,7 @@
  * @file drv8214_platform.h
  * @author Killian Baillifard
  * @date 07.10.2025
- * @brief Configuration registers access. These registers are read / write.
+ * @brief Plateform configuration for I2C interface of driver.
  */
 
 #ifndef DRV8214_PLATFORM_H
