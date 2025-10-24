@@ -29,15 +29,10 @@ typedef struct Drv8214 {
     Pca9546a *mux;
     uint8_t muxChannel;
 
-    // Fault pin GPIO
+    // GPIO fault pin 
 
     GPIO_TypeDef *faultPort;
     uint16_t faultPin;
-
-    // Application state
-
-    bool invertedPolarity;
-    int64_t rippleCount;
 
 } Drv8214;
 
