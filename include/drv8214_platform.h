@@ -38,7 +38,7 @@ typedef struct Drv8214 {
 
 /**
  * @brief Write register of a DRV8214 driver.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param reg Address of the target register.
  * @param value Value to be written into the register.
  */
@@ -46,7 +46,7 @@ void drv8214_write(Drv8214 *driver, uint8_t reg, uint8_t value);
 
 /**
  * @brief Read register of a DRV8214 driver.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param reg Address of the target register.
  * @return Register value.
  */

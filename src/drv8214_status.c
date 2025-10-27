@@ -32,7 +32,7 @@ bool drv8214_is_stall_set(Drv8214 *driver) {
     return drv8214_read_flags(driver, DRV8214_FAULT, DRV8214_FAULT_STALL);
 }
 
-bool drv8214_is_overcurrent_potection_set(Drv8214 *driver) {
+bool drv8214_is_overcurrent_protection_set(Drv8214 *driver) {
     return drv8214_read_flags(driver, DRV8214_FAULT, DRV8214_FAULT_OCP);
 }
 

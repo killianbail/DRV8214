@@ -147,11 +147,46 @@ typedef enum Drv8214BridgePwmPolarity {
 
 // Getters
 
+/**
+ * @brief Get the driver outputs state.
+ * @param driver Driver handle.
+ * @return True if driver outputs are enabled, false otherwise.
+ */
 bool drv8214_is_driver_outputs_enabled(Drv8214 *driver);
+
+/**
+ * @brief Get the overvoltage protection state.
+ * @param driver Driver handle.
+ * @return True if driver overvoltage protection is enabled, false otherwise.
+ */
 bool drv8214_is_overvoltage_protection_enabled(Drv8214 *driver);
+
+/**
+ * @brief Get the stall detection state.
+ * @param driver Driver handle.
+ * @return True if stall detection is enabled, false otherwise.
+ */
 bool drv8214_is_stall_enabled(Drv8214 *driver);
+
+/**
+ * @brief Get filter type used for voltage regulation.
+ * @param driver Driver handle.
+ * @return Analog or digital.
+ */
 Drv8214FilterType drv8214_get_filter_type(Drv8214 *driver);
+
+/**
+ * @brief Get the voltage regulation range.
+ * @param driver Driver handle.
+ * @return 0 to 15.7 V or 0 to 3.82 V
+ */
 Drv8214RegulationVoltageRange drv8214_get_regulation_range(Drv8214 *driver);
+
+/**
+ * @brief Get the manual PWM state.
+ * @param driver Driver handle.
+ * @return True if PWM can be controlled manually, false otherwise.
+ */
 bool drv8214_is_manual_pwm_enabled(Drv8214 *driver);
 
 /**
@@ -180,61 +215,61 @@ Drv8214BridgePwmPolarity drv8214_get_i2c_pwm_mode(Drv8214 *driver);
 
 /**
  * @brief Enable or disable the driver output.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param state State of the ouput.
  */
 void drv8214_set_driver_outputs_enabled(Drv8214 *driver, bool state);
 
 /**
  * @brief Enable or disable the over-voltage protection.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param state State of the over-voltage protection.
  */
 void drv8214_set_overvoltage_protection_enabled(Drv8214 *driver, bool state);
 
 /**
  * @brief Enable or disable stall detection.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param state State of the stall detection.
  */
 void drv8214_set_stall_detection_enabled(Drv8214 *driver, bool state);
 
 /**
  * @brief Allow to change low-pass filter used for regulation between analog and digital.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param filterType Type of filter to use.
  */
 void drv8214_set_filter_type(Drv8214 *driver, Drv8214FilterType filterType);
 
 /**
  * @brief Change the voltage range used during small voltage regulation.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param voltageRange Voltage range to use for small voltage regulation.
  */
 void drv8214_set_regulation_range(Drv8214 *driver, Drv8214RegulationVoltageRange voltageRange);
 
 /**
  * @brief Reset the ripple counter.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  */
 void drv8214_reset_ripple_counter(Drv8214 *driver);
 
 /**
  * @brief Clear all faults.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  */
 void drv8214_clear_faults(Drv8214 *driver);
 
 /**
  * @brief Enable or disable manual PWM control.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param state State of the manual PWM control.
  */
 void drv8214_set_manual_pwm_enabled(Drv8214 *driver, bool state);
 
 /**
  * @brief Set the inrush duration for which stall detection is ignored.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param duration Duration in seconds.
  * @note Only work with stop start disabled. Implementation with the formulas in the datasheet doesn't work,
  * neither does the fix provided on the following forum :
@@ -244,98 +279,98 @@ void drv8214_set_inrush_duration(Drv8214 *driver, float duration);
 
 /**
  * @brief Set the current regulation behavior.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param currentRegBehavior Current regulation behavior to be used.
  */
 void drv8214_set_current_regulation_behavior(Drv8214 *driver, Drv8214CurrentRegBehavior currentRegBehavior);
 
 /**
  * @brief Set the stall behavior.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param stallBehaviour Stall behavior to be used.
  */
 void drv8214_set_stall_behavior(Drv8214 *driver, Drv8214StallBehavour stallBehaviour);
 
 /**
  * @brief Allow to fix the internal reference voltage to 0.5 V.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param fixRefVoltage State of the internal reference voltage.
  */
 void drv8214_set_internal_ref_voltage(Drv8214 *driver, Drv8214FixRefVoltage fixRefVoltage);
 
 /**
  * @brief Set the current sense blanking time.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param blankTime Blanking time to be used.
  */
 void drv8214_set_current_blanking_time(Drv8214 *driver, Drv8214BlankTime blankTime);
 
 /**
  * @brief Set the current regulation and stall detection deglitch time.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param deglitchTime Deglitch time to be used.
  */
 void drv8214_set_deglitch_time(Drv8214 *driver, Drv8214DeglitchTime deglitchTime);
 
 /**
  * @brief Set the driver response to an over-current event.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param autoRetry Behavior in case of an over-current event.
  */
 void drv8214_set_overcurrent_protection_mode(Drv8214 *driver, Drv8214AutoRetry autoRetry);
 
 /**
  * @brief Set the driver response to an thermal shut down event.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param autoRetry Behavior in case of an thermal shut down event.
  */
 void drv8214_set_thermal_shutdown_mode(Drv8214 *driver, Drv8214AutoRetry autoRetry);
 
 /**
  * @brief Set the ripple counter behavior when reaching its threshold or its maximum.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param rippleCoutingReporting Ripple counter reporting mode.
  */
 void drv8214_set_ripple_counter_reporting(Drv8214 *driver, Drv8214RippleCounterReporting rippleCoutingReporting);
 
 /**
  * @brief Determine whether stall is reported on the nFAULT pin.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param state State of stall reporting on nFAULT pin.
  */
 void drv8214_set_stall_reporting_enabled(Drv8214 *driver, bool state);
 
 /**
  * @brief When in cycle-by-cycle mode of current regulation, enable or disable reporting of internal current regulation on nFAULT pin.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param state State of internal current regulation reporting.
  */
 void drv8214_set_hbridge_current_regultion_reporting(Drv8214 *driver, bool state);
 
 /**
  * @brief Allow to use phase / enable or PWM mode to control the motor.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param controlMode Control mode to by used on the motor.
  */
 void drv8214_set_control_mode(Drv8214 *driver, Drv8214ControlMode controlMode);
 
 /**
  * @brief Allow to control the bridge from external pins of from I2C registers.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param bridgeControl Type of bridge control to use.
  */
 void drv8214_set_bridge_control_source(Drv8214 *driver, Drv8214BridgeControlSource bridgeControl);
 
 /**
  * @brief When in phase / enable mode, set the bridge polarity. Ignored otherwise.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param phEnBridgePolarity Polarity to use on the bridge.
  */
 void drv8214_set_bridge_ph_en_polarity(Drv8214 *driver, Drv8214BridgePhEnPolarity phEnBridgePolarity);
 
 /**
  * @brief When in PWM mode, set the bridge polarity. Ignored otherwise.
- * @param driver Handle to the driver structure.
+ * @param driver Driver handle.
  * @param pwmBridgePolarity Polarity to use on the bridge.
  */
 void drv8214_set_bridge_pwm_polarity(Drv8214 *driver, Drv8214BridgePwmPolarity pwmBridgePolarity);
