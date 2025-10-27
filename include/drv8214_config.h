@@ -196,19 +196,102 @@ bool drv8214_is_manual_pwm_enabled(Drv8214 *driver);
  */
 float drv8214_get_inrush_duration(Drv8214 *driver);
 
+/**
+ * @brief Get the current regulation behavior.
+ * @param driver Driver handle.
+ * @return Current regulation behavior (disabled, inrush only, always on).
+ */
 Drv8214CurrentRegBehavior drv8214_get_current_regulation_behavior(Drv8214 *driver);
+
+/**
+ * @brief Get the configured stall behavior.
+ * @param driver Driver handle.
+ * @return Stall behavior (cutout or indication only).
+ */
 Drv8214StallBehavour drv8214_get_stall_behaviour(Drv8214 *driver);
+
+/**
+ * @brief Get the internal reference voltage configuration.
+ * @param driver Driver handle.
+ * @return Whether VREF is fixed internally to 0.5 V, or not fixed.
+ */
 Drv8214FixRefVoltage drv8214_get_internal_ref_voltage(Drv8214 *driver);
+
+/**
+ * @brief Get the current sense blanking time.
+ * @param driver Driver handle.
+ * @return Blanking time (1.8 µs or 1.0 µs).
+ */
 Drv8214BlankTime drv8214_get_current_blanking_time(Drv8214 *driver);
+
+/**
+ * @brief Get the deglitch time for current regulation and stall detection.
+ * @param driver Driver handle.
+ * @return Deglitch time (2 µs or 1 µs).
+ */
 Drv8214DeglitchTime drv8214_get_deglitch_time(Drv8214 *driver);
+
+/**
+ * @brief Get the overcurrent protection (OCP) response mode.
+ * @param driver Driver handle.
+ * @return AUTO_RETRY or LATCHED_OFF.
+ */
 Drv8214AutoRetry drv8214_get_overcurrent_protection_mode(Drv8214 *driver);
+
+/**
+ * @brief Get the thermal shutdown (TSD) response mode.
+ * @param driver Driver handle.
+ * @return AUTO_RETRY or LATCHED_OFF.
+ */
 Drv8214AutoRetry drv8214_get_thermal_shutdown_mode(Drv8214 *driver);
+
+/**
+ * @brief Get ripple counter reporting configuration.
+ * @param driver Driver handle.
+ * @return RC reporting mode (nFAULT behavior and RC_CNT overflow policy).
+ */
 Drv8214RippleCounterReporting drv8214_get_ripple_counter_reporting(Drv8214 *driver);
+
+/**
+ * @brief Get whether stall conditions are reported on nFAULT.
+ * @param driver Driver handle.
+ * @return true if stall reporting is enabled on nFAULT, false otherwise.
+ */
 bool drv8214_get_stall_reporting(Drv8214 *driver);
+
+/**
+ * @brief Get whether internal current regulation is reported on nFAULT in cycle-by-cycle mode.
+ * @param driver Driver handle.
+ * @return true if reporting is enabled, false otherwise.
+ */
 bool drv8214_get_hbridge_current_regultion_reporting(Drv8214 *driver);
+
+/**
+ * @brief Get the control mode (PH/EN or PWM).
+ * @param driver Driver handle.
+ * @return Control mode selector.
+ */
 Drv8214ControlMode drv8214_get_control_mode(Drv8214 *driver);
+
+/**
+ * @brief Get the bridge control source (external pins or I2C bits).
+ * @param driver Driver handle.
+ * @return Bridge control source selector.
+ */
 Drv8214BridgeControlSource drv8214_get_i2c_bridge_control(Drv8214 *driver);
+
+/**
+ * @brief Get PH/EN polarity used for internal bridge control (when applicable).
+ * @param driver Driver handle.
+ * @return PH/EN polarity mapping or NA.
+ */
 Drv8214BridgePhEnPolarity drv8214_get_i2c_ph_en_mode(Drv8214 *driver);
+
+/**
+ * @brief Get PWM polarity used for internal bridge control (when applicable).
+ * @param driver Driver handle.
+ * @return PWM polarity mapping or NA.
+ */
 Drv8214BridgePwmPolarity drv8214_get_i2c_pwm_mode(Drv8214 *driver);
 
 // Setters

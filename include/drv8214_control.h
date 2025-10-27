@@ -165,43 +165,263 @@ typedef enum Drv8214KDiv {
 
 // Getters
 
+/**
+ * @brief Check whether soft-start/soft-stop is enabled.
+ * @param driver Driver handle.
+ * @return true if soft-start/stop is enabled, false otherwise.
+ */
 bool drv8214_is_soft_start_stop_enabled(Drv8214 *driver);
+
+/**
+ * @brief Get the active regulation scheme.
+ * @param driver Driver handle.
+ * @return Regulation scheme (fixed off-time, cycle-by-cycle, speed, or voltage regulation).
+ */
 Drv8214RegulationScheme drv8214_get_regulation_scheme(Drv8214 *driver);
+
+/**
+ * @brief Get the PWM carrier frequency.
+ * @param driver Driver handle.
+ * @return PWM frequency selector (25 kHz or 50 kHz).
+ */
 Drv8214PwmFreq drv8214_get_pwm_frequency(Drv8214 *driver);
+
+/**
+ * @brief Get the speed scaling factor (W_SCALE) used in speed targets.
+ * @param driver Driver handle.
+ * @return Speed scale (16, 32, 64, 128).
+ */
 Drv8214SpeedScale drv8214_get_speed_scaling_factor(Drv8214 *driver);
+
+/**
+ * @brief Read the target motor voltage when voltage regulation is active.
+ * @param driver Driver handle.
+ * @return Target voltage in volts.
+ * @note Valid only when regulation scheme is voltage regulation. Range depends on VM gain selection.
+ */
 float drv8214_get_target_motor_voltage(Drv8214 *driver);
+
+/**
+ * @brief Read the target motor speed when speed regulation is active.
+ * @param driver Driver handle.
+ * @return Target speed in rad/s (interpreted with the configured W_SCALE).
+ * @note Valid only when regulation scheme is speed regulation.
+ */
 float drv8214_get_target_motor_speed(Drv8214 *driver);
+
+/**
+ * @brief Get the output voltage low-pass filter cutoff selection.
+ * @param driver Driver handle.
+ * @return Cutoff frequency code.
+ */
 Drv8214CutoffFreq drv8214_get_voltage_lowpass_cutoff(Drv8214 *driver);
+
+/**
+ * @brief Get the manual duty cycle value (EXT_DUTY).
+ * @param driver Driver handle.
+ * @return Duty cycle percentage in [0, 100].
+ * @note Applicable when manual duty control is enabled and internal bridge control is used.
+ */
 float drv8214_get_manual_duty_cycle(Drv8214 *driver);
+
+/**
+ * @brief Check whether ripple counting is enabled.
+ * @param driver Driver handle.
+ * @return true if ripple counting is enabled, false otherwise.
+ */
 bool drv8214_is_ripple_counting_enabled(Drv8214 *driver);
+
+/**
+ * @brief Check whether ripple error correction is disabled.
+ * @param driver Driver handle.
+ * @return true if error correction is disabled, false if enabled.
+ */
 bool drv8214_is_error_correction_disabled(Drv8214 *driver);
+
+/**
+ * @brief Check whether the bridge is forced Hi-Z when RC count exceeds threshold.
+ * @param driver Driver handle.
+ * @return true if bridge cutoff on RC threshold is enabled, false otherwise.
+ */
 bool drv8214_is_bridge_cutoff_on_threshold_enabled(Drv8214 *driver);
+
+/**
+ * @brief Get the input scaling applied to the ripple detection filter.
+ * @param driver Driver handle.
+ * @return Filter input scaling selection.
+ */
 Drv8214FilterScale drv8214_get_filter_input_scaling(Drv8214 *driver);
+
+/**
+ * @brief Get the current mirror gain selection.
+ * @param driver Driver handle.
+ * @return Current mirror gain / OCP range setting.
+ */
 Drv8214CsGainSel drv8214_get_current_mirror_gain(Drv8214 *driver);
+
+/**
+ * @brief Read the ripple counter threshold (10-bit effective) and its scale.
+ * @param driver Driver handle.
+ * @param[out] threshold Raw 10-bit threshold value reconstructed to 16-bit space.
+ * @param[out] scale Threshold scaling factor (division applied). Can be NULL.
+ */
 void drv8214_get_ripple_counter_threshold(Drv8214 *driver, uint16_t *threshold, Drv8214RippleCounterThresholdScale *scale);
+
+/**
+ * @brief Get the inverse motor resistance setting and scale.
+ * @param driver Driver handle.
+ * @param[out] inverseResistance Raw 8-bit inverse resistance code (must not be 0).
+ * @param[out] scale Scale applied to the inverse resistance. Can be NULL.
+ */
 void drv8214_get_motor_resistance(Drv8214 *driver, uint8_t *inverseResistance, Drv8214InverseMotorResistanceScale *scale);
+
+/**
+ * @brief Get the motor constant (Kmc) code and its scale.
+ * @param driver Driver handle.
+ * @param[out] motorConstant Raw 8-bit Kmc code.
+ * @param[out] scale Scale applied to Kmc. Can be NULL.
+ */
 void drv8214_get_motor_constant(Drv8214 *driver, uint8_t *motorConstant, Drv8214MotorConstantScale *scale);
+
+/**
+ * @brief Get the band-pass filter inverse quality factor (Q⁻¹) code.
+ * @param driver Driver handle.
+ * @return 4-bit quality code (0..15).
+ */
 uint8_t drv8214_get_bandpass_quality(Drv8214 *driver);
+
+/**
+ * @brief Check whether error correction pulses are disabled.
+ * @param driver Driver handle.
+ * @return true if EC pulses are disabled, false otherwise.
+ */
 bool drv8214_is_error_correction_pulse_disabled(Drv8214 *driver);
+
+/**
+ * @brief Get ripple speed low-pass cutoff selection (mechanical filter).
+ * @param driver Driver handle.
+ * @return 3-bit cutoff selector (implementation-defined mapping).
+ */
 uint8_t drv8214_get_ripple_lowpass_cutoff(Drv8214 *driver);
+
+/**
+ * @brief Get the error-correction false-ripple window.
+ * @param driver Driver handle.
+ * @return Window percentage selector.
+ */
 Drv8214ErrorCorrectorWindow drv8214_get_error_correction_false_window(Drv8214 *driver);
+
+/**
+ * @brief Get the error-correction miss-ripple window.
+ * @param driver Driver handle.
+ * @return Window percentage selector.
+ */
 Drv8214ErrorCorrectorWindow drv8214_get_error_correction_miss_window(Drv8214 *driver);
+
+/**
+ * @brief Read PI regulator coefficients for speed/voltage regulation.
+ * @param driver Driver handle.
+ * @param[out] kpNum Kp numerator (5-bit).
+ * @param[out] kpDen Kp denominator (K_DIV).
+ * @param[out] kiNum Ki numerator (5-bit).
+ * @param[out] kiDen Ki denominator (K_DIV).
+ */
 void drv8214_get_pi_coefficients(Drv8214 *driver, uint8_t *kpNum, uint8_t *kpDen, uint8_t *kiNum, uint8_t *kiDen);
 
 // Setters
 
+/**
+ * @brief Enable or disable soft-start/soft-stop.
+ * @param driver Driver handle.
+ * @param state true to enable, false to disable.
+ */
 void drv8214_set_soft_start_stop_enabled(Drv8214 *driver, bool state);
+
+/**
+ * @brief Set the regulation scheme.
+ * @param driver Driver handle.
+ * @param currentRegulationScheme Desired scheme (fixed off-time, cycle-by-cycle, speed, voltage).
+ */
 void drv8214_set_regulation_scheme(Drv8214 *driver, Drv8214RegulationScheme currentRegulationScheme);
+
+/**
+ * @brief Set the PWM carrier frequency.
+ * @param driver Driver handle.
+ * @param pwmFreq Frequency selection (25 kHz or 50 kHz).
+ */
 void drv8214_set_pwm_frequency(Drv8214 *driver, Drv8214PwmFreq pwmFreq);
+
+/**
+ * @brief Set the speed scaling factor (W_SCALE).
+ * @param driver Driver handle.
+ * @param speedScale W_SCALE selection (16/32/64/128).
+ */
 void drv8214_set_speed_scaling_factor(Drv8214 *driver, Drv8214SpeedScale speedScale);
+
+/**
+ * @brief Set the target motor voltage for voltage regulation.
+ * @param driver Driver handle.
+ * @param voltage Target voltage in volts.
+ * @note Range is limited by the configured VM gain selection.
+ */
 void drv8214_set_target_motor_voltage(Drv8214 *driver, float voltage);
+
+/**
+ * @brief Set the target motor speed for speed regulation.
+ * @param driver Driver handle.
+ * @param speed Target speed in rad/s (interpreted with W_SCALE).
+ */
 void drv8214_set_target_motor_speed(Drv8214 *driver, float speed);
+
+/**
+ * @brief Set the output voltage low-pass filter cutoff.
+ * @param driver Driver handle.
+ * @param cutoffFreq Cutoff selection.
+ */
 void drv8214_set_voltage_lowpass_cutoff(Drv8214 *driver, Drv8214CutoffFreq cutoffFreq);
+
+/**
+ * @brief Set manual duty cycle (EXT_DUTY).
+ * @param driver Driver handle.
+ * @param percentage Duty cycle in percent [0, 100].
+ * @note Requires manual duty control to be enabled and internal bridge control.
+ */
 void drv8214_set_manual_duty_cycle(Drv8214 *driver, float percentage);
+
+/**
+ * @brief Enable or disable ripple counting.
+ * @param driver Driver handle.
+ * @param state true to enable, false to disable.
+ */
 void drv8214_set_ripple_counting_enabled(Drv8214 *driver, bool state);
+
+/**
+ * @brief Enable or disable ripple error correction.
+ * @param driver Driver handle.
+ * @param state true to disable error correction, false to enable it.
+ */
 void drv8214_set_error_correction_disabled(Drv8214 *driver, bool state);
+
+/**
+ * @brief Enable or disable forcing the bridge to Hi-Z when RC count exceeds threshold.
+ * @param driver Driver handle.
+ * @param state true to enable Hi-Z on threshold, false to keep bridge active.
+ */
 void drv8214_set_bridge_cutoff_on_threshold_enabled(Drv8214 *driver, bool state);
+
+/**
+ * @brief Set the input scaling factor for ripple detection filtering.
+ * @param driver Driver handle.
+ * @param filterScale Filter input scale.
+ */
 void drv8214_set_filter_input_scaling(Drv8214 *driver, Drv8214FilterScale filterScale);
+
+/**
+ * @brief Set current mirror gain / OCP range.
+ * @param driver Driver handle.
+ * @param csGainSel Gain range selection.
+ * @warning Adjust your current calculations and protections accordingly.
+ */
 void drv8214_set_current_mirror_gain(Drv8214 *driver, Drv8214CsGainSel csGainSel);
 
 /**
@@ -215,13 +435,65 @@ void drv8214_set_current_mirror_gain(Drv8214 *driver, Drv8214CsGainSel csGainSel
  */
 uint16_t drv8214_set_ripple_counter_threshold(Drv8214 *driver, uint16_t target, Drv8214RippleCounterThresholdScale *scale);
 
+/**
+ * @brief Set the inverse motor resistance (scaled).
+ * @param driver Driver handle.
+ * @param inverseResistance Raw 8-bit code (must not be 0).
+ * @param scale Scale applied to the inverse resistance.
+ */
 void drv8214_set_motor_resistance(Drv8214 *driver, uint8_t inverseResistance, Drv8214InverseMotorResistanceScale scale);
+
+/**
+ * @brief Set the motor constant (Kmc) and scale.
+ * @param driver Driver handle.
+ * @param motorConstant Raw 8-bit code.
+ * @param scale Kmc scale selection.
+ */
 void drv8214_set_motor_constant(Drv8214 *driver, uint8_t motorConstant, Drv8214MotorConstantScale scale);
+
+/**
+ * @brief Set band-pass inverse quality factor (Q⁻¹) code.
+ * @param driver Driver handle.
+ * @param quality 4-bit code [0..15].
+ */
 void drv8214_set_bandpass_quality(Drv8214 *driver, uint8_t quality);
+
+/**
+ * @brief Enable or disable error correction pulses.
+ * @param driver Driver handle.
+ * @param state true to disable pulses, false to enable.
+ */
 void drv8214_set_error_correction_pulse_disabled(Drv8214 *driver, bool state);
+
+/**
+ * @brief Set ripple speed low-pass cutoff (mechanical filter).
+ * @param driver Driver handle.
+ * @param value 3-bit cutoff selector [0..7].
+ */
 void drv8214_set_ripple_lowpass_cutoff(Drv8214 *driver, uint8_t value);
+
+/**
+ * @brief Set error-correction false-ripple window.
+ * @param driver Driver handle.
+ * @param window Window percentage selector.
+ */
 void drv8214_set_error_correction_false_window(Drv8214 *driver, Drv8214ErrorCorrectorWindow window);
+
+/**
+ * @brief Set error-correction miss-ripple window.
+ * @param driver Driver handle.
+ * @param window Window percentage selector.
+ */
 void drv8214_set_error_correction_miss_window(Drv8214 *driver, Drv8214ErrorCorrectorWindow window);
+
+/**
+ * @brief Set PI regulator coefficients.
+ * @param driver Driver handle.
+ * @param kpNum Kp numerator (5-bit).
+ * @param kpDen Kp denominator (K_DIV).
+ * @param kiNum Ki numerator (5-bit).
+ * @param kiDen Ki denominator (K_DIV).
+ */
 void drv8214_set_pi_coefficients(Drv8214 *driver, uint8_t kpNum, Drv8214KDiv kpDen, uint8_t kiNum, Drv8214KDiv kiDen);
 
 #ifdef __cplusplus
