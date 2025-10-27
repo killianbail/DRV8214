@@ -13,28 +13,19 @@ extern "C" {
 #endif
 
 #include <stdbool.h>
-#include <stm32wb5mxx.h>
-#include <stm32wbxx_hal.h>
-#include "pca9546a.h"
+#include "drv8214_structure.h"
 
 /**
  * @brief Driver structure, fields can be customized as needed.
  */
-typedef struct Drv8214 {
+typedef struct Drv8214 Drv8214;
 
-    // I2C interface
-
-    I2C_HandleTypeDef *hi2c;
-    uint8_t address;
-    Pca9546a *mux;
-    uint8_t muxChannel;
-
-    // GPIO fault pin 
-
-    GPIO_TypeDef *faultPort;
-    uint16_t faultPin;
-
-} Drv8214;
+/**
+ * @brief Read driver's fault pin logic level.
+ * @param driver Driver handle.
+ * @return True if fault pin is active, false otherwise.
+ */
+bool drv8214_is_fault_pin_active(Drv8214 *driver);
 
 /**
  * @brief Write register of a DRV8214 driver.
@@ -42,7 +33,7 @@ typedef struct Drv8214 {
  * @param reg Address of the target register.
  * @param value Value to be written into the register.
  */
-void drv8214_write(Drv8214 *driver, uint8_t reg, uint8_t value);
+void drv8214_i2c_write(Drv8214 *driver, uint8_t reg, uint8_t value);
 
 /**
  * @brief Read register of a DRV8214 driver.
@@ -50,7 +41,7 @@ void drv8214_write(Drv8214 *driver, uint8_t reg, uint8_t value);
  * @param reg Address of the target register.
  * @return Register value.
  */
-uint8_t drv8214_read(Drv8214 *driver, uint8_t reg);
+uint8_t drv8214_i2c_read(Drv8214 *driver, uint8_t reg);
 
 #ifdef __cplusplus
 }

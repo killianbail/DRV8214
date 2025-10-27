@@ -1,74 +1,75 @@
-# **WORK IN PROGRESS**
-
-# DRV8214 I2C Control Library
+# DRV8214 Library
 
 ## Overview
 
-This library provides a set of straightforward commands to control and configure the **DRV8214** brushed DC motor driver from Texas Instruments via the I2C interface. The DRV8214 is a high-performance integrated H-bridge motor driver featuring speed and position detection through ripple counting, along with additional functionalities such as motor speed and voltage regulation, stall detection, current sensing, and protection circuitry.
+This library provides a high level multiplatform C interface for Texas Instruments **DRV8214** brushed DC motor driver.
 
-## Features
+## Platform
 
-- **I2C Communication**: Seamlessly interface with the DRV8214 over I2C for efficient motor control.
-- **Motor Control**: Configure easily the various regulation and control modes of the driver.
-- **Motion Control**: Basic motion functions like turnForward to more advanced ones like turnXRipples or turnXRotations. 
-- **Configuration Settings**: Access and modify device parameters to suit specific application requirements.
-- **Status Monitoring**: Retrieve real-time data on motor performance and fault conditions.
+To work with this library, 2 files must be implemented :
 
-## Getting Started
+- `drv8214_structure.h` which contains the definition of the structure passed through the library. This structure include platform specific fields such as the I2C peripheral.
 
-### Prerequisites
+```c
+#ifndef DRV8214_STRUCTURE_H
+#define DRV8214_STRUCTURE_H
 
-- **Hardware**: A microcontroller with I2C capability (e.g., Arduino, ESP32, STM32) and the DRV8214 motor driver.
-- **Software**: Arduino IDE or PlatformIO for code development and uploading.
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-### Installation
+// Includes
 
-1. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/yourusername/DRV8214_I2C_Library.git
-   ```
+#include <my_mcu_defs.h>
 
-2. **Include the Library**: Add the cloned library to your project's libraries directory.
+// Structures
 
-### Usage
+struct Drv8214 {
 
+    // I2C interface
 
-```cpp
-#include <DRV8214.h>
+    MY_MCU_I2C_Handle_t *i2c;
+    uint8_t address;
 
-#define IPROPI_RESISTOR 1000 // Value in Ohms of the resistor connected to IPROPI pin
-#define NUM_RIPPLES 156 // Number of current ripples per output shaft revolution 
+    // GPIO fault pin 
 
-// Initialize the driver with the I2C address, driver ID, and hardware dependant values
-DRV8214 motorDriver(0x60, 0, IPROPI_RESISTOR, NUM_RIPPLES);
+    MY_MCU_GPIO_Handle_t *faultGpio;
 
-// Create a configuration struct for the driver
-DRV8214_Config driver_config;
+};
 
-void setup() {
-    Wire.begin();
-    motorDriver.init(driver_config);
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* DRV8214_STRUCTURE_H */
+```
+
+- `drv8214_platform.c`, which contains functions definitions to read and write registers of the driver through I2C, and possibly read the fault pin status.
+
+```c
+// Includes
+
+#include <my_mcu_defs.h>
+#include "drv8214_platform.h"
+
+// Definitions
+
+bool drv8214_is_fault_pin_active(Drv8214 *driver) {
+    return my_mcu_gpio_read(driver->faultGpio) == 0;
 }
 
-void loop() {
-    // Your code here
-    // example for Arduino/ESP32
-    motorDriver.turnXRipples(50000, true, true, 1);
-    delay(5000);
-    motorDriver.turnXRipples(50000, false, true, 1);
-    delay(5000);
+uint8_t drv8214_i2c_read(Drv8214 *driver, uint8_t reg) {
+    uint8_t data;
+    my_mcu_i2c_read(driver->i2c, driver->address, driver->reg, &data, 1);
+    return data;
+}
+
+void drv8214_i2c_write(Drv8214 *driver, uint8_t reg, uint8_t value) {
+    my_mcu_i2c_write(driver->i2c, driver->address, driver->reg, &value, 1);
 }
 ```
 
+## Credits
 
-## License
-
-This project is licensed under the MIT License. See the `LICENSE` file for more details.
-
-## Acknowledgments
-
-Special thanks to the open-source community and Texas Instruments for their comprehensive documentation and support.
-
----
-
-*Note: This library is under active development. Features and implementations are subject to change. Users are encouraged to regularly update and refer to the latest documentation.* 
+- Theo Heng, original creator.
+- Killian Baillifard, current reworked version.

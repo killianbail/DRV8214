@@ -50,8 +50,6 @@ extern "C" {
 
 // Getters
 
-bool drv8214_is_fault_pin_active(Drv8214 *driver);
-
 /**
  * @brief Read the whole fault register.
  * @param driver Driver handle.
