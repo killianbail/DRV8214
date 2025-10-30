@@ -158,7 +158,7 @@ void drv8214_set_target_motor_voltage(Drv8214 *driver, float voltage) {
     drv8214_masked_write(driver, DRV8214_REG_CTRL1, DRV8214_REG_CTRL1_WSET_VSET, target);
 }
 
-void drv8214_set_target_motor_speed(Drv8214 *driver, float speed) {
+void drv8214_set_target_ripple_speed(Drv8214 *driver, float speed) {
     if(drv8214_get_regulation_scheme(driver) != DRV8214_REG_CTRL_SPEED_REG)
         return;
     if(speed < 0.0f)

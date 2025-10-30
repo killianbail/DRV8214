@@ -369,9 +369,9 @@ void drv8214_set_target_motor_voltage(Drv8214 *driver, float voltage);
 /**
  * @brief Set the target motor speed for speed regulation.
  * @param driver Driver handle.
- * @param speed Target speed in rad/s (interpreted with W_SCALE).
+ * @param speed Target ripple speed in rad/s (interpreted with W_SCALE).
  */
-void drv8214_set_target_motor_speed(Drv8214 *driver, float speed);
+void drv8214_set_target_ripple_speed(Drv8214 *driver, float speed);
 
 /**
  * @brief Set the output voltage low-pass filter cutoff.
