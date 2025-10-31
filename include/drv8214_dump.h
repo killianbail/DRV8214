@@ -14,17 +14,7 @@ extern "C" {
 
 // Includes
 
-#include "log.h"
 #include "drv8214_platform.h"
-
-// Definitions
-
-/**
- * @brief Print macro. Override with the desired print function (e.g. 'printf').
- * @param format String with format identifiers (%d, %.3f and so on).
- * @param ... Variable number of arguments to format.
- */
-#define PRINT log_message
 
 // Prototypes
 

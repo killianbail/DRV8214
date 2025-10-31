@@ -14,7 +14,7 @@
 #include "main.h"
 #include "gpio.h"
 
-// Definitions
+// Implementations
 
 uint8_t drv8214_get_faults(Drv8214 *driver) {
     return drv8214_i2c_read(driver, DRV8214_FAULT);

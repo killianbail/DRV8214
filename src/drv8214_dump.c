@@ -11,7 +11,7 @@
 #include "drv8214_dump.h"
 #include "drv8214_status.h"
 
-// Definitions
+// Implementations
 
 void drv8214_dump_faults(Drv8214 *driver, char *buffer, size_t size) {
 

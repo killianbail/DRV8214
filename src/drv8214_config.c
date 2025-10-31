@@ -12,7 +12,7 @@
 #include "drv8214_control.h"
 #include "drv8214_regedit.h"
 
-// Getters
+// Implementations
 
 bool drv8214_is_driver_outputs_enabled(Drv8214 *driver) {
     return drv8214_read_flags(driver, DRV8214_CONFIG0, DRV8214_CONFIG0_EN_OUT);
@@ -118,8 +118,6 @@ Drv8214BridgePwmPolarity drv8214_get_i2c_pwm_mode(Drv8214 *driver) {
         return DRV8214_PWM_NA;
     return drv8214_masked_read(driver, DRV8214_CONFIG4, DRV8214_CONFIG4_I2C_BC_MODE);
 }
-
-// Setters
 
 void drv8214_set_driver_outputs_enabled(Drv8214 *driver, bool state) {
     drv8214_write_flags(driver, DRV8214_CONFIG0, DRV8214_CONFIG0_EN_OUT, state);

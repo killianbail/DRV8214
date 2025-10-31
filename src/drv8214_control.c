@@ -5,13 +5,15 @@
  * @brief Control registers access. These registers are read / write.
  */
 
+// Includes
+
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include "drv8214_control.h"
 #include "drv8214_config.h"
 #include "drv8214_regedit.h"
 
-// Getters
+// Implementations
 
 bool drv8214_is_soft_start_stop_enabled(Drv8214 *driver) {
     return drv8214_read_flags(driver, DRV8214_REG_CTRL0, DRV8214_REG_CTRL0_EN_SS);
@@ -124,8 +126,6 @@ void drv8214_get_pi_coefficients(Drv8214 *driver, uint8_t *kpNum, uint8_t *kpDen
     *kiNum = drv8214_masked_read(driver, DRV8214_RC_CTRL8, DRV8214_RC_CTRL8_KI);
     *kiDen = drv8214_masked_read(driver, DRV8214_RC_CTRL8, DRV8214_RC_CTRL8_KI_DIV) >> DRV8214_RC_CTRL8_KI_DIV_SHIFT;
 }
-
-// Setters
 
 void drv8214_set_soft_start_stop_enabled(Drv8214 *driver, bool state) {
     drv8214_write_flags(driver, DRV8214_REG_CTRL0, DRV8214_REG_CTRL0_EN_SS, state);

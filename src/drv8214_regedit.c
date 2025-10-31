@@ -5,7 +5,11 @@
  * @brief Registers edition functions.
  */
 
+// Includes
+
 #include "drv8214_regedit.h"
+
+// Implementations
 
 bool drv8214_read_flags(Drv8214 *driver, uint8_t reg, uint8_t mask) {
     return (drv8214_i2c_read(driver, reg) & mask) != 0 ? true : false;
