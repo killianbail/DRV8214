@@ -131,7 +131,7 @@ void drv8214_set_stall_detection_enabled(Drv8214 *driver, bool state) {
     drv8214_write_flags(driver, DRV8214_CONFIG0, DRV8214_CONFIG0_EN_STALL, state);
 }
 
-void drv8214_set_filter_type(Drv8214 *driver, Drv8214FilterType filterType) {
+void drv8214_set_voltage_filter_type(Drv8214 *driver, Drv8214FilterType filterType) {
     drv8214_masked_write(driver, DRV8214_CONFIG0, DRV8214_CONFIG0_VSNS_SEL, filterType << DRV8214_CONFIG0_VSNS_SEL_SHIFT);
 }
 

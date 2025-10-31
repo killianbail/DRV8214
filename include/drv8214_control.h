@@ -414,7 +414,7 @@ void drv8214_set_bridge_cutoff_on_threshold_enabled(Drv8214 *driver, bool state)
  * @param driver Driver handle.
  * @param filterScale Filter input scale.
  */
-void drv8214_set_filter_input_scaling(Drv8214 *driver, Drv8214FilterScale filterScale);
+void drv8214_set_current_ripples_scaling_factor(Drv8214 *driver, Drv8214FilterScale filterScale);
 
 /**
  * @brief Set current mirror gain / OCP range.
@@ -452,11 +452,11 @@ void drv8214_set_motor_resistance(Drv8214 *driver, uint8_t inverseResistance, Dr
 void drv8214_set_motor_constant(Drv8214 *driver, uint8_t motorConstant, Drv8214MotorConstantScale scale);
 
 /**
- * @brief Set band-pass inverse quality factor (Q⁻¹) code.
+ * @brief Set band-pass inverse quality factor (Q⁻¹).
  * @param driver Driver handle.
  * @param quality 4-bit code [0..15].
  */
-void drv8214_set_bandpass_quality(Drv8214 *driver, uint8_t quality);
+void drv8214_set_ripple_counter_bandpass_quality(Drv8214 *driver, uint8_t quality);
 
 /**
  * @brief Enable or disable error correction pulses.
@@ -466,11 +466,11 @@ void drv8214_set_bandpass_quality(Drv8214 *driver, uint8_t quality);
 void drv8214_set_error_correction_pulse_disabled(Drv8214 *driver, bool state);
 
 /**
- * @brief Set ripple speed low-pass cutoff (mechanical filter).
+ * @brief Set ripple counter output filter low-pass cutoff frequency (T_MECH).
  * @param driver Driver handle.
  * @param value 3-bit cutoff selector [0..7].
  */
-void drv8214_set_ripple_lowpass_cutoff(Drv8214 *driver, uint8_t value);
+void drv8214_set_ripple_counter_out_lowpass_cutoff(Drv8214 *driver, uint8_t value);
 
 /**
  * @brief Set error-correction false-ripple window.

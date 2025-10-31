@@ -197,7 +197,7 @@ void drv8214_set_bridge_cutoff_on_threshold_enabled(Drv8214 *driver, bool state)
     drv8214_write_flags(driver, DRV8214_RC_CTRL0, DRV8214_RC_CTRL0_RC_HIZ, state);
 }
 
-void drv8214_set_filter_input_scaling(Drv8214 *driver, Drv8214FilterScale filterScale) {
+void drv8214_set_current_ripples_scaling_factor(Drv8214 *driver, Drv8214FilterScale filterScale) {
     drv8214_masked_write(driver, DRV8214_RC_CTRL0, DRV8214_RC_CTRL0_FLT_GAIN_SEL, filterScale << DRV8214_RC_CTRL0_FLT_GAIN_SEL_SHIFT);
 }
 
@@ -259,7 +259,7 @@ void drv8214_set_motor_constant(Drv8214 *driver, uint8_t motorConstant, Drv8214M
     drv8214_masked_write(driver, DRV8214_RC_CTRL2, DRV8214_RC_CTRL2_KMC_SCALE, scale << DRV8214_RC_CTRL2_KMC_SCALE_SHIFT);
 }
 
-void drv8214_set_bandpass_quality(Drv8214 *driver, uint8_t quality) {
+void drv8214_set_ripple_counter_bandpass_quality(Drv8214 *driver, uint8_t quality) {
     drv8214_masked_write(driver, DRV8214_RC_CTRL5, DRV8214_RC_CTRL5_FLT_K, quality << DRV8214_RC_CTRL5_FLT_K_SHIFT);
 }
 
@@ -267,7 +267,7 @@ void drv8214_set_error_correction_pulse_disabled(Drv8214 *driver, bool state) {
     drv8214_write_flags(driver, DRV8214_RC_CTRL6, DRV8214_RC_CTRL6_EC_PULSE_DIS, state);
 }
 
-void drv8214_set_ripple_lowpass_cutoff(Drv8214 *driver, uint8_t value) {
+void drv8214_set_ripple_counter_out_lowpass_cutoff(Drv8214 *driver, uint8_t value) {
     drv8214_masked_write(driver, DRV8214_RC_CTRL6, DRV8214_RC_CTRL6_T_MECH_FLT, value << DRV8214_RC_CTRL6_T_MECH_FLT_SHIFT);
 }
 

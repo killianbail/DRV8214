@@ -318,11 +318,11 @@ void drv8214_set_overvoltage_protection_enabled(Drv8214 *driver, bool state);
 void drv8214_set_stall_detection_enabled(Drv8214 *driver, bool state);
 
 /**
- * @brief Allow to change low-pass filter used for regulation between analog and digital.
+ * @brief Allow to change low-pass filter used for voltage regulation between analog and digital.
  * @param driver Driver handle.
  * @param filterType Type of filter to use.
  */
-void drv8214_set_filter_type(Drv8214 *driver, Drv8214FilterType filterType);
+void drv8214_set_voltage_filter_type(Drv8214 *driver, Drv8214FilterType filterType);
 
 /**
  * @brief Change the voltage range used during small voltage regulation.
