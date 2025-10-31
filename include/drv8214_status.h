@@ -55,7 +55,7 @@ extern "C" {
  * @param driver Driver handle.
  * @return Bit field of the fault register.
  */
-uint8_t drv8214_get_fault_flags(Drv8214 *driver);
+uint8_t drv8214_get_faults(Drv8214 *driver);
 
 /**
  * @brief Read the fault bit of the fault status register.

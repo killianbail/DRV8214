@@ -30,8 +30,10 @@ extern "C" {
 
 /**
  * @brief Dump current DRV8214 faults.
+ * @param buffer Buffer where output will be dumped.
+ * @param size Size of the given buffer.
  */
-void drv8214_dump_faults(Drv8214 *driver);
+void drv8214_dump_faults(Drv8214 *driver, char *buffer, size_t size);
 
 #ifdef __cplusplus
 }

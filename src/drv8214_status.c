@@ -16,7 +16,7 @@
 
 // Definitions
 
-uint8_t drv8214_get_fault_flags(Drv8214 *driver) {
+uint8_t drv8214_get_faults(Drv8214 *driver) {
     return drv8214_i2c_read(driver, DRV8214_FAULT);
 }
 
