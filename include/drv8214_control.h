@@ -146,6 +146,20 @@ typedef enum Drv8214RippleCounterThresholdScale {
     DRV8214_RC_THR_SCALE_64 = 0b11
 } Drv8214RippleCounterThresholdScale;
 
+typedef enum Drv8214RippleFilterQFactor {
+    DRV8214_Q_FACTOR_0_007813,
+    DRV8214_Q_FACTOR_0_015265,
+    DRV8214_Q_FACTOR_0_03125,
+    DRV8214_Q_FACTOR_0_0625,
+    DRV8214_Q_FACTOR_0_125,
+    DRV8214_Q_FACTOR_0_25,
+    DRV8214_Q_FACTOR_0_5,
+    DRV8214_Q_FACTOR_0_625,
+    DRV8214_Q_FACTOR_0_75,
+    DRV8214_Q_FACTOR_0_825,
+    DRV8214_Q_FACTOR_1
+} Drv8214QFactor;
+
 typedef enum Drv8214ErrorCorrectorWindow {
     DRV8214_EC_WINDOW_20_PERCENT = 0b00,
     DRV8214_EC_WINDOW_30_PERCENT = 0b01,
@@ -430,33 +444,32 @@ void drv8214_set_current_mirror_gain(Drv8214 *driver, Drv8214CsGainSel csGainSel
  * Therefore target threshold is rounded up or down to the closest possible value before being set.
  * @param driver Driver handle.
  * @param target Target threshold.
- * @param scale Optionnal return value, can be set to NULL. Division which have been applied to target threshold.
  * @return Actual threshold
  */
-uint16_t drv8214_set_ripple_counter_threshold(Drv8214 *driver, uint16_t target, Drv8214RippleCounterThresholdScale *scale);
+uint16_t drv8214_set_ripple_counter_threshold(Drv8214 *driver, uint16_t target);
 
 /**
- * @brief Set the inverse motor resistance (scaled).
+ * @brief Configure the motor resistance expected by the driver. This value is used by the driver to tune it's internal bandpass filter for ripple counting.
  * @param driver Driver handle.
- * @param inverseResistance Raw 8-bit code (must not be 0).
- * @param scale Scale applied to the inverse resistance.
+ * @param resistance Resistance of the motor in Ω
+ * @note Resistance can be set between 8192 Ω (8192 / 1) and 7.84 mΩ (2 / 255). Any value out of bound will be clamped.
  */
-void drv8214_set_motor_resistance(Drv8214 *driver, uint8_t inverseResistance, Drv8214InverseMotorResistanceScale scale);
+void drv8214_set_motor_resistance(Drv8214 *driver, float resistance);
 
 /**
  * @brief Set the motor constant (Kmc) and scale.
  * @param driver Driver handle.
- * @param motorConstant Raw 8-bit code.
- * @param scale Kmc scale selection.
+ * @param speedConstant Motor back EMF constant in V/(rad/s).
+ * @param ripplesPerRevolution Number of current ripples per revolution of the motor.
  */
-void drv8214_set_motor_constant(Drv8214 *driver, uint8_t motorConstant, Drv8214MotorConstantScale scale);
+void drv8214_set_motor_constant(Drv8214 *driver, float speedConstant, float ripplesPerRevolution);
 
 /**
  * @brief Set band-pass inverse quality factor (Q⁻¹).
  * @param driver Driver handle.
- * @param quality 4-bit code [0..15].
+ * @param quality quality factor.
  */
-void drv8214_set_ripple_counter_bandpass_quality(Drv8214 *driver, uint8_t quality);
+void drv8214_set_ripple_counter_bandpass_quality(Drv8214 *driver, Drv8214QFactor quality);
 
 /**
  * @brief Enable or disable error correction pulses.
@@ -489,12 +502,10 @@ void drv8214_set_error_correction_miss_window(Drv8214 *driver, Drv8214ErrorCorre
 /**
  * @brief Set PI regulator coefficients.
  * @param driver Driver handle.
- * @param kpNum Kp numerator (5-bit).
- * @param kpDen Kp denominator (K_DIV).
- * @param kiNum Ki numerator (5-bit).
- * @param kiDen Ki denominator (K_DIV).
+ * @param kp Proportional gain.
+ * @param ki Integral gain.
  */
-void drv8214_set_pi_coefficients(Drv8214 *driver, uint8_t kpNum, Drv8214KDiv kpDen, uint8_t kiNum, Drv8214KDiv kiDen);
+void drv8214_set_pi_coefficients(Drv8214 *driver, float kp, float ki);
 
 #ifdef __cplusplus
 }

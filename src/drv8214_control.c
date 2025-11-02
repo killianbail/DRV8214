@@ -205,30 +205,33 @@ void drv8214_set_current_mirror_gain(Drv8214 *driver, Drv8214CsGainSel csGainSel
     drv8214_masked_write(driver, DRV8214_RC_CTRL0, DRV8214_RC_CTRL0_CS_GAIN_SEL, csGainSel);
 }
 
-uint16_t drv8214_set_ripple_counter_threshold(Drv8214 *driver, uint16_t target, Drv8214RippleCounterThresholdScale *scale) {
+uint16_t drv8214_set_ripple_counter_threshold(Drv8214 *driver, uint16_t target) {
+
+    // Available options
+    static const uint32_t THRESHOLD_SCALE_VALUES[4] = { 0x07FFu, 0x1FFFu, 0x3FFFu, 0xFFFFu };
+    static const uint8_t THRESHOLD_SHIFTS[4] = { 1u, 3u, 4u, 6u };
+    static const Drv8214RippleCounterThresholdScale THRESHOLD_SCALE_MASKS[4] = {
+        DRV8214_RC_THR_SCALE_2,
+        DRV8214_RC_THR_SCALE_8,
+        DRV8214_RC_THR_SCALE_16,
+        DRV8214_RC_THR_SCALE_64
+    };
 
     // Allocate local variables
-    Drv8214RippleCounterThresholdScale thresholdScale = DRV8214_RC_THR_SCALE_2;
+    Drv8214RippleCounterThresholdScale thresholdScaleMask = DRV8214_RC_THR_SCALE_2;
     uint8_t thresholdShift = 1;
     bool ceil = false;
 
     // Find closest applicable threshold
-    if(target <= 0b0000011111111111) {
-        thresholdScale = DRV8214_RC_THR_SCALE_2;
-        thresholdShift = 1;
-        ceil = (target & 0b1) >= 0b1 ? true : false;
-    } else if(target <= 0b0001111111111111) {
-        thresholdScale = DRV8214_RC_THR_SCALE_8;
-        thresholdShift = 3;
-        ceil = (target & 0b111) >= 0b100 ? true : false;
-    } else if(target <= 0b0011111111111111) {
-        thresholdScale = DRV8214_RC_THR_SCALE_16;
-        thresholdShift = 4;
-        ceil = (target & 0b1111) >= 0b1000 ? true : false;
-    } else {
-        thresholdScale = DRV8214_RC_THR_SCALE_64;
-        thresholdShift = 6;
-        ceil = (target & 0b111111) >= 0b100000 ? true : false;
+    for(uint8_t i = 0; i < 4; ++i) {
+        if(target <= THRESHOLD_SCALE_VALUES[i]) {
+            thresholdScaleMask = THRESHOLD_SCALE_MASKS[i];
+            thresholdShift = THRESHOLD_SHIFTS[i];
+            uint16_t mask = (1u << thresholdShift) - 1u;
+            uint16_t half = (1u << (thresholdShift - 1u));
+            ceil = ( (target & mask) >= half );
+            break;
+        }
     }
 
     // Shift and round threshold to closest value
@@ -239,27 +242,73 @@ uint16_t drv8214_set_ripple_counter_threshold(Drv8214 *driver, uint16_t target, 
     // Apply threshold and scale
     drv8214_masked_write(driver, DRV8214_RC_CTRL1, DRV8214_RC_CTRL1_RC_THR, shiftedThreshold & 0x00FF);
     drv8214_masked_write(driver, DRV8214_RC_CTRL2, DRV8214_RC_CTRL2_RC_THR, (shiftedThreshold & 0xFF00) >> 8);
-    drv8214_masked_write(driver, DRV8214_RC_CTRL2, DRV8214_RC_CTRL2_RC_THR_SCALE, thresholdScale << DRV8214_RC_CTRL2_RC_THR_SCALE_SHIFT);
-    
-    // Return actual threshold and optionally scale value
-    if(scale != NULL)
-        *scale = thresholdScale;
+    drv8214_masked_write(driver, DRV8214_RC_CTRL2, DRV8214_RC_CTRL2_RC_THR_SCALE, thresholdScaleMask << DRV8214_RC_CTRL2_RC_THR_SCALE_SHIFT);
     return shiftedThreshold << thresholdShift;
 }
 
-void drv8214_set_motor_resistance(Drv8214 *driver, uint8_t inverseResistance, Drv8214InverseMotorResistanceScale scale) {
-    if(inverseResistance == 0)
-        return;
-    drv8214_masked_write(driver, DRV8214_RC_CTRL3, DRV8214_RC_CTRL3_INV_R, inverseResistance);
-    drv8214_masked_write(driver, DRV8214_RC_CTRL2, DRV8214_RC_CTRL2_INV_R_SCALE, scale << DRV8214_RC_CTRL2_INV_R_SCALE_SHIFT);
+void drv8214_set_motor_resistance(Drv8214 *driver, float resistance) {
+
+    // Available options
+    static const float NUMERATORS_VALUES[4] = {8192.0f, 1024.0f, 64.0f, 2.0f};
+    static const Drv8214InverseMotorResistanceScale NUMERATORS_MASKS[4] = {
+        DRV8214_INV_R_SCALE_8192,
+        DRV8214_INV_R_SCALE_1024,
+        DRV8214_INV_R_SCALE_64,
+        DRV8214_INV_R_SCALE_2
+    };
+
+    // Clamp out of bounds values
+    if(resistance > (8192.0f / 1.0f))
+        resistance = (8192.0f / 1.0f);
+    if(resistance < (2.0f / 255.0f))
+        resistance = (2.0f / 255.0f);
+
+    // Find optimal range
+    for(uint8_t i = 0; i < 4; ++i) {
+        float denominator = roundf(NUMERATORS_VALUES[i] / resistance);
+        if(denominator <= 255.0f) {
+            drv8214_masked_write(driver, DRV8214_RC_CTRL3, DRV8214_RC_CTRL3_INV_R, (uint8_t)denominator);
+            drv8214_masked_write(driver, DRV8214_RC_CTRL2, DRV8214_RC_CTRL2_INV_R_SCALE, NUMERATORS_MASKS[i] << DRV8214_RC_CTRL2_INV_R_SCALE_SHIFT);
+            return;
+        }
+    }
 }
 
-void drv8214_set_motor_constant(Drv8214 *driver, uint8_t motorConstant, Drv8214MotorConstantScale scale) {
-    drv8214_masked_write(driver, DRV8214_RC_CTRL4, DRV8214_RC_CTRL4_KMC, motorConstant);
-    drv8214_masked_write(driver, DRV8214_RC_CTRL2, DRV8214_RC_CTRL2_KMC_SCALE, scale << DRV8214_RC_CTRL2_KMC_SCALE_SHIFT);
+void drv8214_set_motor_constant(Drv8214 *driver, float speedConstant, float ripplesPerRevolution) {
+
+    // Available options
+    static const Drv8214MotorConstantScale DENOMINATOR_MASKS[4] = {
+        DRV8214_KMC_SCALE_24_TIME_2_POW_13,
+        DRV8214_KMC_SCALE_24_TIME_2_POW_12,
+        DRV8214_KMC_SCALE_24_TIME_2_POW_9,
+        DRV8214_KMC_SCALE_24_TIME_2_POW_8
+    };
+    static const float DENOMINATOR_VALUES[4] = {
+        24.0f * (float)(1 << 13),
+        24.0f * (float)(1 << 12),
+        24.0f * (float)(1 << 9),
+        24.0f * (float)(1 << 8)
+    };
+    
+    // Clamp out of bounds values
+    float kmc = speedConstant * ripplesPerRevolution;
+    if(kmc < 0)
+        kmc = 0;
+    if(kmc > (255.0f / DENOMINATOR_VALUES[3]))
+        kmc = (255.0f / DENOMINATOR_VALUES[3]);
+
+    // Find optimal range
+    for(uint8_t i = 0; i < 4; ++i) {
+        float numerator = roundf(kmc * DENOMINATOR_VALUES[i]);
+        if(numerator <= 255.0f) {
+            drv8214_masked_write(driver, DRV8214_RC_CTRL4, DRV8214_RC_CTRL4_KMC, (uint8_t)numerator);
+            drv8214_masked_write(driver, DRV8214_RC_CTRL2, DRV8214_RC_CTRL2_KMC_SCALE, DENOMINATOR_MASKS[i] << DRV8214_RC_CTRL2_KMC_SCALE_SHIFT);
+            return;
+        }
+    }
 }
 
-void drv8214_set_ripple_counter_bandpass_quality(Drv8214 *driver, uint8_t quality) {
+void drv8214_set_ripple_counter_bandpass_quality(Drv8214 *driver, Drv8214QFactor quality) {
     drv8214_masked_write(driver, DRV8214_RC_CTRL5, DRV8214_RC_CTRL5_FLT_K, quality << DRV8214_RC_CTRL5_FLT_K_SHIFT);
 }
 
@@ -279,9 +328,55 @@ void drv8214_set_error_correction_miss_window(Drv8214 *driver, Drv8214ErrorCorre
     drv8214_masked_write(driver, DRV8214_RC_CTRL6, DRV8214_RC_CTRL6_EC_MISS_PER, window);
 }
 
-void drv8214_set_pi_coefficients(Drv8214 *driver, uint8_t kpNum, Drv8214KDiv kpDen, uint8_t kiNum, Drv8214KDiv kiDen) {
-    drv8214_masked_write(driver, DRV8214_RC_CTRL7, DRV8214_RC_CTRL7_KP, kpNum);
-    drv8214_masked_write(driver, DRV8214_RC_CTRL7, DRV8214_RC_CTRL7_KP_DIV, kpDen << DRV8214_RC_CTRL7_KP_DIV_SHIFT);
-    drv8214_masked_write(driver, DRV8214_RC_CTRL8, DRV8214_RC_CTRL8_KI, kiNum);
-    drv8214_masked_write(driver, DRV8214_RC_CTRL8, DRV8214_RC_CTRL8_KI_DIV, kiDen << DRV8214_RC_CTRL8_KI_DIV_SHIFT);
+void drv8214_set_pi_coefficients(Drv8214 *driver, float kp, float ki) {
+
+    // Available options
+    static const float DENOMINATORS_VALUES[7] = {
+        512.0f,
+        256.0f,
+        128.0f,
+        64.0f,
+        32.0f,
+        16.0f,
+        1.0f
+    };
+    static const Drv8214KDiv DENOMINATORS_MASKS[7] = {
+        DRV8214_K_DIV_512,
+        DRV8214_K_DIV_256,
+        DRV8214_K_DIV_128,
+        DRV8214_K_DIV_64,
+        DRV8214_K_DIV_32,
+        DRV8214_K_DIV_16,
+        DRV8214_K_DIV_1
+    };
+
+    // Clamp values
+    if(kp < 0)
+        kp = 0;
+    if(kp > (31.0f / DENOMINATORS_VALUES[6]))
+        kp = (31.0f / DENOMINATORS_VALUES[6]);
+    if(ki < 0)
+        ki = 0;
+    if(ki > (31.0f / DENOMINATORS_VALUES[6]))
+        ki = (31.0f / DENOMINATORS_VALUES[6]);
+
+    // Find optimal KP
+    for(uint8_t i = 0; i < 7; ++i) {
+        float numerator = roundf(kp * DENOMINATORS_VALUES[i]);
+        if(numerator <= 31.0f) {
+            drv8214_masked_write(driver, DRV8214_RC_CTRL7, DRV8214_RC_CTRL7_KP, (uint8_t)numerator);
+            drv8214_masked_write(driver, DRV8214_RC_CTRL7, DRV8214_RC_CTRL7_KP_DIV, DENOMINATORS_MASKS[i] << DRV8214_RC_CTRL7_KP_DIV_SHIFT);
+            break;
+        }
+    }
+
+    // Find optimal KI
+    for(uint8_t i = 0; i < 7; ++i) {
+        float numerator = roundf(ki * DENOMINATORS_VALUES[i]);
+        if(numerator <= 31.0f) {
+            drv8214_masked_write(driver, DRV8214_RC_CTRL8, DRV8214_RC_CTRL8_KI, (uint8_t)numerator);
+            drv8214_masked_write(driver, DRV8214_RC_CTRL8, DRV8214_RC_CTRL8_KI_DIV, DENOMINATORS_MASKS[i] << DRV8214_RC_CTRL8_KI_DIV_SHIFT);
+            break;
+        }
+    }
 }
