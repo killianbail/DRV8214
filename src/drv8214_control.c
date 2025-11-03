@@ -291,7 +291,7 @@ void drv8214_set_motor_constant(Drv8214 *driver, float speedConstant, float ripp
     };
     
     // Clamp out of bounds values
-    float kmc = speedConstant * ripplesPerRevolution;
+    float kmc = speedConstant / ripplesPerRevolution;
     if(kmc < 0)
         kmc = 0;
     if(kmc > (255.0f / DENOMINATOR_VALUES[3]))

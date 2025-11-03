@@ -190,9 +190,9 @@ Drv8214RegulationVoltageRange drv8214_get_regulation_range(Drv8214 *driver);
 bool drv8214_is_manual_pwm_enabled(Drv8214 *driver);
 
 /**
- * @note Only work with stop start disabled. Implementation with the formulas in the datasheet doesn't work,
- * neither does the fix provided on the following forum :
- * https://e2e.ti.com/support/motor-drivers-group/motor-drivers/f/motor-drivers-forum/1516362/drv8214evm-target-voltage-and-soft-start-ss-questions 
+ * @brief Get the inrush duration for which stall detection is ignored.
+ * @param driver Driver handle.
+ * @return Duration in seconds.
  */
 float drv8214_get_inrush_duration(Drv8214 *driver);
 
@@ -354,9 +354,6 @@ void drv8214_set_manual_pwm_enabled(Drv8214 *driver, bool state);
  * @brief Set the inrush duration for which stall detection is ignored.
  * @param driver Driver handle.
  * @param duration Duration in seconds.
- * @note Only work with stop start disabled. Implementation with the formulas in the datasheet doesn't work,
- * neither does the fix provided on the following forum :
- * https://e2e.ti.com/support/motor-drivers-group/motor-drivers/f/motor-drivers-forum/1516362/drv8214evm-target-voltage-and-soft-start-ss-questions 
  */
 void drv8214_set_inrush_duration(Drv8214 *driver, float duration);
 
