@@ -4,6 +4,17 @@
 
 This library provides a high level multiplatform C interface for Texas Instruments **DRV8214** brushed DC motor driver.
 
+## Structure
+
+The register grouping of the **DRV8214** datasheet is mirrored in the files :
+- [drv8214_status.h](./include/drv8214_status.h)
+- [drv8214_config.h](./include/drv8214_config.h)
+- [drv8214_control.h](./include/drv8214_control.h)
+
+These provide functions which mirrors the fields available in the driver, for example :
+- `drv8214_get_ripple_count` will read both `CNT_LOW (STATUS2)` and `CNT_HIGH (STATUS3)` registers to read the 16 bits ripple count value.
+- `drv8214_set_motor_resistance` will take in a floating point value in $\Omega$ and compute the optimal `INV_R (CTRL3)` and `INV_R_SCALE (CTRL2)` combination.
+
 ## Platform
 
 To work with this library, 2 files must be implemented :
