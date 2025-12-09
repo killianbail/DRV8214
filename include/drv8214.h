@@ -3,7 +3,7 @@
  * @author Killian Baillifard, Theo Heng.
  * @date 10.10.2025
  * @brief DRV8214 library. High level API, splitted in status, config and control files according to the datashet.
- * @copyright Copyright (c) 2025 Théo Heng, Licensed under the MIT License. See the LICENSE file in the project root for full license information.
+ * @copyright Copyright (c) 2025 Théo Heng, Licensed under the BSD-2 License. See the LICENSE file in the project root for full license information.
  */
 
 #ifndef DRV8214_H
